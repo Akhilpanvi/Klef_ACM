@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="4" fill="#005CA9"/>
+  <text x="16" y="14" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="9" fill="#ffffff" letter-spacing="-0.3">KLU</text>
+  <text x="16" y="24" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="8" fill="#ffffff" letter-spacing="-0.1">ACM</text>
+</svg>

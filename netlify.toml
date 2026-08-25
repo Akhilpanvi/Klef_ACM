@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# Proxy requests starting with /api/ to Netlify functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Route all other /KLEF-ACM-SC/* paths to the SPA index.html
+[[redirects]]
+  from = "/KLEF-ACM-SC/*"
+  to = "/KLEF-ACM-SC/index.html"
+  status = 200
