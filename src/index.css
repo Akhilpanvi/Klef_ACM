@@ -870,21 +870,6 @@ h4 { font-family: var(--font-sans); font-weight: 600; color: inherit; }
 @media (max-width: 800px) { .cube-wrap { width: 140px; height: 140px; right: 6%; top: 16%; } .cube i:nth-child(1) { transform: translateZ(70px); } .cube i:nth-child(2) { transform: rotateY(180deg) translateZ(70px); } .cube i:nth-child(3) { transform: rotateY(90deg) translateZ(70px); } .cube i:nth-child(4) { transform: rotateY(-90deg) translateZ(70px); } .cube i:nth-child(5) { transform: rotateX(90deg) translateZ(70px); } .cube i:nth-child(6) { transform: rotateX(-90deg) translateZ(70px); } .vhero-foot { flex-direction: column; } }
 
 /* Campus line-drawing (KL aerial photo through #wireframe SVG filter) */
-/* KL aerial photo kept at its true 1920x500 ratio (no crop, no stretch); the plane is wider
-   than the screen so the tilted drawing still fills the bottom of the hero */
-.campus-plane { position: absolute; left: -22%; right: -22%; bottom: -2%; z-index: -1; perspective: 1400px; pointer-events: none; }
-.campus-tilt { position: relative; width: 100%; aspect-ratio: 1920 / 500; transform-origin: 50% 100%; transform: rotateX(30deg); }
-.campus-lines { display: block; width: 100%; height: 100%; object-fit: contain; filter: url(#wireframe); mix-blend-mode: screen; opacity: .85;
-  mask-image: radial-gradient(ellipse 60% 95% at 55% 70%, #000 45%, transparent 88%); -webkit-mask-image: radial-gradient(ellipse 60% 95% at 55% 70%, #000 45%, transparent 88%); }
-/* scan line sweeping across the campus */
-.campus-tilt::after { content: ''; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 90, 98, 0) 40%, rgba(255, 90, 98, 0.35) 49%, rgba(0, 147, 211, 0.35) 51%, rgba(0, 147, 211, 0) 60%, transparent 100%);
-  background-size: 50% 100%; background-repeat: no-repeat; animation: campusScan 7s ease-in-out infinite;
-  mask-image: radial-gradient(ellipse 60% 95% at 55% 70%, #000 45%, transparent 88%); -webkit-mask-image: radial-gradient(ellipse 60% 95% at 55% 70%, #000 45%, transparent 88%); }
-@keyframes campusScan { 0% { background-position: -60% 0; } 100% { background-position: 160% 0; } }
-@media (max-width: 800px) { .campus-plane { left: -70%; right: -70%; } }
-@media (prefers-reduced-motion: reduce) { .campus-tilt::after { animation: none; display: none; } }
-.vhero .vfloor { opacity: .45; }
 
 /* ---------- Cassette (SVG) ---------- */
 .cassette { width: 100%; height: auto; display: block; filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.25)); }
@@ -1169,3 +1154,17 @@ body:has(.theme-dark) { background: #0C0D0F; color-scheme: dark; }
 @media (max-width: 800px) { .ev-row { grid-template-columns: 1fr; gap: 18px; } .ev-row::before { inset: 0 -12px; } }
 @media (prefers-reduced-motion: reduce) { .events-hint, .ev-badge.live i { animation: none; } .ev-row::before, .ev-shine { transition: none; } }
 .events-fade { position: absolute; inset: 0; background: var(--night); opacity: 0; pointer-events: none; }
+
+/* ---------- Hero: KL drone footage ---------- */
+.hero-video { position: absolute; inset: 0; z-index: -3; overflow: hidden; background: #0C0D0F url('/KLEF-ACM-SC/media/kl-aerial-poster.jpg') center / cover; }
+.hero-video video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* readable text on the left, footage breathing on the right, fade into the page below */
+.hero-shade { position: absolute; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(12, 13, 15, 0.86) 0%, rgba(12, 13, 15, 0.55) 45%, rgba(12, 13, 15, 0.15) 100%),
+    linear-gradient(180deg, rgba(12, 13, 15, 0.55) 0%, transparent 22%, transparent 70%, #0C0D0F 100%); }
+.vhero .vglow { z-index: -1; mix-blend-mode: soft-light; opacity: .55; }
+@media (max-width: 700px) {
+  .hero-video { background-image: url('/KLEF-ACM-SC/media/kl-aerial-mobile-poster.jpg'); }
+  .hero-shade { background: linear-gradient(180deg, rgba(12, 13, 15, 0.6) 0%, rgba(12, 13, 15, 0.45) 40%, rgba(12, 13, 15, 0.85) 80%, #0C0D0F 100%); }
+}

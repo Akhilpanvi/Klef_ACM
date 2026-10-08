@@ -7,10 +7,11 @@ import VisualEditable from '../components/VisualEditor/VisualEditable';
 import PageBlockList from '../components/VisualEditor/PageBlockList';
 
 // Layout and motion inspired by acmvit.in. No photos yet (chapter just launched):
-// visuals are drawn in code — wireframe hero, SVG cassettes, gradient art.
+// visuals: KL drone footage in the hero, SVG cassettes, gradient art.
 
 const ease = [0.16, 1, 0.3, 1];
-const CAMPUS = `${import.meta.env.BASE_URL}brand/KL%20Buildings/klu.jpg`;
+// Graded web cuts of the KL drone footage (sources: raw-assets/KL Aerial View, not shipped)
+const MEDIA = `${import.meta.env.BASE_URL}media`;
 
 // ACM Code of Ethics, section 1 (General Ethical Principles), abbreviated
 const ETHICS = [
@@ -144,20 +145,11 @@ export default function Home() {
     { tape: 'ABOUT ACM', color: '#0093D3', title: 'ACM', text: acmData.intro || 'The Association for Computing Machinery is the world’s largest educational and scientific computing society.' }
   ];
 
-  // --- Hero: campus line-drawing on a tilted plane; tilts with the mouse, drifts on scroll
+  // --- Hero: drone footage, drifts and zooms slightly on scroll
   const heroRef = useRef(null);
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const tiltY = useSpring(useTransform(mx, [-1, 1], [-8, 8]), { stiffness: 60, damping: 18 });
-  const tiltX = useSpring(useTransform(my, [-1, 1], [34, 24]), { stiffness: 60, damping: 18 });
   const { scrollYProgress: heroP } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const campusY = useTransform(heroP, [0, 1], ['0%', '18%']);
-  const campusScale = useTransform(heroP, [0, 1], [1, 1.06]);
-  const onHeroMove = (e) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    mx.set(((e.clientX - r.left) / r.width) * 2 - 1);
-    my.set(((e.clientY - r.top) / r.height) * 2 - 1);
-  };
+  const videoY = useTransform(heroP, [0, 1], ['0%', '16%']);
+  const videoScale = useTransform(heroP, [0, 1], [1, 1.08]);
 
   // --- About: pinned, steps through three tapes
   const aboutRef = useRef(null);
@@ -197,26 +189,16 @@ export default function Home() {
   return (
     <div>
       {/* ================= HERO (dark) ================= */}
-      <section ref={heroRef} className="vhero dark" onMouseMove={reduce ? undefined : onHeroMove}>
+      <section ref={heroRef} className="vhero dark">
+        <motion.div className="hero-video" aria-hidden="true" style={reduce ? undefined : { y: videoY, scale: videoScale }}>
+          <video autoPlay={!reduce} muted loop playsInline preload="auto" poster={`${MEDIA}/kl-aerial-poster.jpg`}>
+            <source src={`${MEDIA}/kl-aerial-mobile.mp4`} type="video/mp4" media="(max-width: 700px) and (orientation: portrait)" />
+            <source src={`${MEDIA}/kl-aerial.mp4`} type="video/mp4" />
+          </video>
+        </motion.div>
+        <div className="hero-shade" />
         <div className="vglow red" />
         <div className="vglow blue" />
-        <div className="vfloor" />
-        {/* Edge-detection filter: turns the campus photo into white line art */}
-        <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
-          <filter id="wireframe" colorInterpolationFilters="sRGB">
-            <feColorMatrix type="saturate" values="0" />
-            <feGaussianBlur stdDeviation="0.4" />
-            <feConvolveMatrix order="3" kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1" preserveAlpha="true" />
-            <feComponentTransfer>
-              <feFuncR type="table" tableValues="0 0.5 0.9 1 1" /><feFuncG type="table" tableValues="0 0.5 0.9 1 1" /><feFuncB type="table" tableValues="0 0.5 0.9 1 1" />
-            </feComponentTransfer>
-          </filter>
-        </svg>
-        <motion.div className="campus-plane" aria-hidden="true" style={reduce ? undefined : { y: campusY, scale: campusScale }}>
-          <motion.div className="campus-tilt" style={reduce ? undefined : { rotateX: tiltX, rotateY: tiltY }}>
-            <img src={CAMPUS} alt="" className="campus-lines" />
-          </motion.div>
-        </motion.div>
 
         <div className="container">
           <h1 className="vhero-title">

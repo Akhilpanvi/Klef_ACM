@@ -29,3 +29,7 @@ dist-ssr
 .env.*.local
 .env.backup
 .env.production
+
+# Raw source media (GBs) — kept out of public/ so it is never built or deployed;
+# web-ready cuts live in public/media
+raw-assets/
