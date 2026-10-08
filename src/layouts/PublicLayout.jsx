@@ -2,6 +2,8 @@ import { useContext, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import OpeningIntro from '../components/OpeningIntro';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { SiteDataContext } from '../App';
 
 export default function PublicLayout() {
@@ -11,27 +13,27 @@ export default function PublicLayout() {
 
   useEffect(() => {
     const path = location.pathname;
-    let title = 'KLU ACM — Student Chapter';
-    let description = 'KLU ACM Student Chapter at Koneru Lakshmaiah Education Foundation (Deemed to be University).';
+    let title = 'KLEF ACM Student Chapter';
+    let description = 'KLEF ACM Student Chapter at Koneru Lakshmaiah Education Foundation (Deemed to be University).';
 
-    if (path.endsWith('/events')) {
-      title = 'KLU ACM — Events';
-      description = 'Explore upcoming coding events, workshops, hackathons, and technical bootcamps organized by KLU ACM.';
-    } else if (path.endsWith('/gallery')) {
-      title = 'KLU ACM — Gallery';
-      description = 'Visual documentation and gallery archives of past KLU ACM hackathons, sessions, and workshops.';
-    } else if (path.endsWith('/members')) {
-      title = 'KLU ACM — Members';
-      description = 'Meet the faculty coordinators and student committee members driving KLU ACM chapter leadership.';
-    } else if (path.endsWith('/about-acm')) {
-      title = 'KLU ACM — About ACM';
+    if (path.endsWith('/events') || path.includes('/events') || path.includes('/Events')) {
+      title = 'KLEF ACM — Events';
+      description = 'Explore upcoming coding events, workshops, hackathons, and technical bootcamps organized by KLEF ACM.';
+    } else if (path.endsWith('/gallery') || path.includes('/gallery') || path.includes('/Gallery')) {
+      title = 'KLEF ACM — Gallery';
+      description = 'Visual documentation and gallery archives of past KLEF ACM hackathons, sessions, and workshops.';
+    } else if (path.endsWith('/members') || path.includes('/members') || path.includes('/Members')) {
+      title = 'KLEF ACM — Members';
+      description = 'Meet the faculty coordinators and student committee members driving KLEF ACM chapter leadership.';
+    } else if (path.endsWith('/about-acm') || path.includes('/About-ACM')) {
+      title = 'KLEF ACM — About ACM';
       description = 'Learn about the Association for Computing Machinery (ACM), the world\'s largest scientific computing society.';
-    } else if (path.endsWith('/about-klef-acm')) {
-      title = 'KLU ACM — About KLU ACM';
-      description = 'About the KLU ACM Student Chapter at Koneru Lakshmaiah Education Foundation (Deemed to be University).';
-    } else if (path.endsWith('/contact')) {
-      title = 'KLU ACM — Contact';
-      description = 'Get in touch with the KLU ACM Student Chapter representatives and coordinators.';
+    } else if (path.endsWith('/about-klef-acm') || path.includes('/About-KLEF-ACM') || path.includes('/About-KLU-ACM')) {
+      title = 'KLEF ACM — About KLEF ACM';
+      description = 'About the KLEF ACM Student Chapter at Koneru Lakshmaiah Education Foundation (Deemed to be University).';
+    } else if (path.endsWith('/contact') || path.includes('/Contact')) {
+      title = 'KLEF ACM — Contact';
+      description = 'Get in touch with the KLEF ACM Student Chapter representatives and coordinators.';
     }
 
     document.title = title;
@@ -64,28 +66,44 @@ export default function PublicLayout() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [location.pathname]);
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Viewport Top Scroll Progress Indicator */}
-      <div 
-        style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          width: `${scrollProgress}%`, 
-          height: '2.5px', 
-          backgroundColor: 'var(--primary)', 
-          zIndex: 10000, 
-          transition: 'width 0.1s cubic-bezier(0.22, 1, 0.36, 1)' 
-        }} 
-      />
-      <Header />
-      <main style={{ flex: '1 0 auto' }}>
-        <div key={location.key} className="page-transition-wrapper">
-          <Outlet />
-        </div>
-      </main>
-      <Footer contact={siteData?.contact || {}} />
-    </div>
-  );
-}
+    // Check if on specific member bio/profile detail route
+    const isMemberBioPage = /^\/members\/.+/i.test(location.pathname);
+
+    // Check if on home page route
+    const currentCleanPath = location.pathname.toLowerCase().replace(/\/+$/, '');
+    const isHomePage = currentCleanPath === '' || 
+      currentCleanPath === '/' || 
+      currentCleanPath === '/home' || 
+      currentCleanPath === '/klef-acm-sc' || 
+      currentCleanPath === '/klef-acm-sc/home';
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* Grand Opening Intro only on Home page */}
+        {isHomePage && <OpeningIntro />}
+
+        {/* Viewport Top Scroll Progress Indicator */}
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            width: `${scrollProgress}%`, 
+            height: '2.5px', 
+            backgroundColor: 'var(--primary)', 
+            zIndex: 10000, 
+            transition: 'width 0.1s cubic-bezier(0.22, 1, 0.36, 1)' 
+          }} 
+        />
+        <Header />
+        <main style={{ flex: '1 0 auto' }}>
+          <div className="page-transition-wrapper">
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </div>
+        </main>
+        {!isMemberBioPage && <Footer contact={siteData?.contact || {}} />}
+      </div>
+    );
+  }

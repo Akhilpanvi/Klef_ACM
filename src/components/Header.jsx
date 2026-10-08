@@ -11,29 +11,20 @@ export default function Header() {
 
   const navItems = [
     { path: '/', label: 'Home' },
-    { path: '/events', label: 'Events' },
-    { path: '/gallery', label: 'Gallery' },
-    { path: '/members', label: 'Members' },
-    { path: '/about-acm', label: 'About ACM' },
-    { path: '/about-klef-acm', label: 'About KLU ACM' },
-    { path: '/contact', label: 'Contact' },
+    { path: '/Events', label: 'Events' },
+    { path: '/Gallery', label: 'Gallery' },
+    { path: '/Members', label: 'Members' },
+    { path: '/About-ACM', label: 'About ACM' },
+    { path: '/About-KLEF-ACM', label: 'About KLEF ACM' },
+    { path: '/Contact', label: 'Contact' },
   ];
 
   return (
     <header className="header-wrapper">
       <div className="container header-container">
         {/* Logo Section */}
-        <Link to="/" className="logo-container" style={{ textDecoration: 'none' }}>
-          <div style={{
-            borderLeft: '3px solid var(--primary)',
-            paddingLeft: '10px',
-            display: 'flex',
-            flexDirection: 'column',
-            lineHeight: '1.15'
-          }}>
-            <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--secondary)', letterSpacing: '-0.02em', textTransform: 'uppercase' }}>KLU ACM</span>
-            <span style={{ fontSize: '0.65rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Student Chapter</span>
-          </div>
+        <Link to="/" className="logo-container" aria-label="KLEF ACM Student Chapter — Home">
+          <img src={`${import.meta.env.BASE_URL}brand/klef-acm-logo.png`} alt="KL University × KLEF ACM Student Chapter" className="brand-logo" />
         </Link>
 
         {/* Desktop Navigation */}
@@ -54,8 +45,9 @@ export default function Header() {
           className="mobile-menu-btn"
           onClick={toggleMobileMenu}
           aria-label="Toggle menu"
+          style={{ padding: '6px', background: 'transparent', border: 'none', cursor: 'pointer' }}
         >
-          {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
@@ -66,17 +58,17 @@ export default function Header() {
           top: 'var(--header-height)',
           left: 0,
           right: 0,
-          backgroundColor: 'var(--bg-card)',
-          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'var(--bg-white)',
+          borderBottom: '1px solid var(--border-light)',
           zIndex: 99,
           display: 'flex',
           flexDirection: 'column',
-          padding: mobileMenuOpen ? '16px 24px' : '0 24px',
-          gap: '16px',
-          maxHeight: mobileMenuOpen ? '400px' : '0px',
+          padding: mobileMenuOpen ? '20px 24px' : '0 24px',
+          gap: '14px',
+          maxHeight: mobileMenuOpen ? '420px' : '0px',
           opacity: mobileMenuOpen ? 1 : 0,
           overflow: 'hidden',
-          transition: 'max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, padding 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: 'max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, padding 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
           pointerEvents: mobileMenuOpen ? 'auto' : 'none'
         }}
       >
@@ -86,11 +78,12 @@ export default function Header() {
             to={item.path}
             className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
             style={{ 
-              padding: '8px 0', 
-              borderBottom: 'none',
-              transform: mobileMenuOpen ? 'translateY(0)' : 'translateY(-10px)',
+              padding: '10px 0', 
+              fontSize: '0.95rem',
+              borderBottom: '1px solid var(--border-subtle)',
+              transform: mobileMenuOpen ? 'translateY(0)' : 'translateY(-8px)',
               opacity: mobileMenuOpen ? 1 : 0,
-              transition: `transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${idx * 40}ms, opacity 0.4s ease ${idx * 40}ms`
+              transition: `transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) ${idx * 30}ms, opacity 0.35s ease ${idx * 30}ms`
             }}
             onClick={() => setMobileMenuOpen(false)}
           >

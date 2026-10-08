@@ -1,705 +1,833 @@
 import { useContext, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, Cpu, FileText, Award, ArrowRight, Image as ImageIcon } from 'lucide-react';
-import { SiteDataContext } from '../App';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { 
-  ScrollReveal, 
-  TextReveal, 
-  EditorialLabel, 
-  OversizedText, 
-  ScrollScaleText, 
-  WordHighlight, 
-  SplitText 
-} from '../components/ScrollReveal';
-
-// Editorial Marquee component
-function EditorialMarquee({ text = "KLU ACM • COMPUTING • COMMUNITY • RESEARCH • INNOVATION" }) {
-  const trackText = `${text} • ${text} • `;
-  return (
-    <div style={{ 
-      borderTop: '1px solid var(--border)', 
-      borderBottom: '1px solid var(--border)', 
-      padding: '16px 0', 
-      margin: '40px 0',
-      overflow: 'hidden',
-      width: '100%',
-      backgroundColor: '#ffffff'
-    }}>
-      <div className="editorial-marquee-track" style={{ display: 'flex', gap: '32px', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '0.15em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-        <span>{trackText}</span>
-        <span>{trackText}</span>
-      </div>
-    </div>
-  );
-}
+  Calendar, 
+  ArrowRight, 
+  Cpu, 
+  Code2, 
+  Globe, 
+  Zap, 
+  Layers, 
+  Users, 
+  Shield, 
+  Sparkles, 
+  Trophy, 
+  Network, 
+  Lightbulb, 
+  Mic, 
+  Boxes,
+  Camera,
+  Compass,
+  CheckCircle2,
+  ExternalLink,
+  BookOpen,
+  Terminal,
+  Activity,
+  Award,
+  X,
+  Maximize2
+} from 'lucide-react';
+import { SiteDataContext } from '../App';
+import SafeImage from '../components/SafeImage';
+import VisualEditable from '../components/VisualEditor/VisualEditable';
+import VisualImageReplacer from '../components/VisualEditor/VisualImageReplacer';
+import PageBlockList from '../components/VisualEditor/PageBlockList';
+const kluLogo = `${import.meta.env.BASE_URL}brand/klef-acm-logo.png`;
 
 export default function Home() {
   const { siteData } = useContext(SiteDataContext);
   const homeData = siteData?.pages?.home?.content || {};
   const events = siteData?.events || [];
-  const gallery = siteData?.gallery || [];
 
-  const heroImageUrl = homeData.hero_image_url || '';
-  const communityImageUrl = homeData.community_image_url || '';
-  const awardsImageUrl = homeData.awards_image_url || '';
-  const researchImageUrl = homeData.research_image_url || '';
-
-  // Hero content bindings
-  const heroTitle = homeData.hero?.title || 'Empowering Future Computing Professionals';
-  const heroDesc = homeData.hero?.description || 'Welcome to the official portal of the KLU ACM Student Chapter. We foster a community of passionate student developers, researchers, and innovators driving the future of computer science.';
-
-  // Stats content bindings - only show if explicitly set in the database (no fake defaults)
-  const statsEvents = homeData.stats?.events_count;
-  const statsMembers = homeData.stats?.members_count;
-  const statsWorkshops = homeData.stats?.workshops_count;
-  const statsProjects = homeData.stats?.projects_count;
-  const hasStats = statsEvents || statsMembers || statsWorkshops || statsProjects;
-
-  // Intro content bindings
-  const introHeading = homeData.introduction?.heading || 'Advancing Computing as a Science & Profession';
-  const introText = homeData.introduction?.text || 'The KLU ACM Student Chapter is dedicated to promoting a deeper understanding of computing, software engineering, and technological research among student developers. Through guest lectures, coding bootcamps, and national hackathons, we bridge the gap between academic theory and industry excellence.';
-
-  // Achievements - only show if explicitly provided in database (no fake placeholders)
-  const achievements = Array.isArray(homeData.achievements) ? homeData.achievements : [];
-
-  // Derive Featured Event (is_featured = true and is_published = true)
   const featuredEvent = events.find(e => e.is_featured && e.is_published) || events.find(e => e.is_published);
+  const teamGroupPhoto = homeData.team_group_image_url || homeData.group_photo_url || '';
+  const [zoomedImage, setZoomedImage] = useState(null);
 
-  // Derive top 3 recent published events (excluding featured if it exists)
-  const filteredEventsForGrid = featuredEvent 
-    ? events.filter(e => e.id !== featuredEvent.id && e.is_published).slice(0, 3)
-    : events.filter(e => e.is_published).slice(0, 3);
-
-  // Derive top 4 gallery images
-  const galleryTeaser = gallery.slice(0, 4);
-
-  // Subtle Parallax hook
-  const [scrollY, setScrollY] = useState(0);
+  // Keyboard escape listener for lightbox
   useEffect(() => {
-    let active = true;
-    const handleScroll = () => {
-      if (active) {
-        setScrollY(window.scrollY);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      active = false;
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const parallaxTransform = !isReduced 
-    ? { transform: `translateY(${Math.min(20, Math.max(-20, scrollY * 0.03))}px)`, transition: 'transform 0.1s ease-out' }
-    : {};
-
-  // Split hero description by sentences for staggering reveals
-  const sentences = heroDesc.split('. ').map((s, idx, arr) => {
-    let t = s.trim();
-    if (!t) return '';
-    if (idx < arr.length - 1 || s.endsWith('.')) {
-      t = t.endsWith('.') ? t : t + '.';
+    if (zoomedImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
-    return t;
-  }).filter(Boolean);
-
-  const getSentenceStyle = (idx) => {
-    if (isReduced) return {};
-    return {
-      animation: 'sentenceReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
-      animationDelay: `${750 + idx * 180}ms`,
-      transform: 'translateY(100%)',
-      opacity: 0,
-      display: 'inline-block'
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && zoomedImage) setZoomedImage(null);
     };
-  };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [zoomedImage]);
+
+  // Scroll animations
+  const { scrollY } = useScroll();
+  const heroOpacity = useTransform(scrollY, [0, 450], [1, 0.25]);
+
+  // Official 6 ACM Chapter Initiatives with bespoke technical tracks, visual imagery & distinct ACM accents
+  const initiatives = [
+    {
+      id: 'dev-sprints',
+      track: '01',
+      title: 'Dev Sprints',
+      tagline: 'Collaborative Build Marathons',
+      desc: 'Intense collaborative marathons where teams build and ship real-world software solutions from scratch.',
+      image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80',
+      accentColor: '#00A3E0', // ACM Electric Blue
+      bgTone: 'rgba(0, 163, 224, 0.05)',
+      borderTone: 'rgba(0, 163, 224, 0.25)',
+      icon: Code2,
+      deliverables: ['Production Deployment', 'Rapid Prototyping', 'Team Git Workflow'],
+      scope: 'Software Engineering'
+    },
+    {
+      id: 'skill-labs',
+      track: '02',
+      title: 'Skill Labs',
+      tagline: 'Deep-Dive Technical Workshops',
+      desc: 'Practical, deep-dive workshops covering cutting-edge domains like AI/ML, cloud architecture, and full-stack development.',
+      image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
+      accentColor: '#10B981', // Emerald Tech
+      bgTone: 'rgba(16, 185, 129, 0.05)',
+      borderTone: 'rgba(16, 185, 129, 0.25)',
+      icon: Cpu,
+      deliverables: ['Hands-on Code Labs', 'Cloud & AI Toolchains', 'Architecture Reviews'],
+      scope: 'Applied Engineering'
+    },
+    {
+      id: 'tech-keynotes',
+      track: '03',
+      title: 'Tech Keynotes',
+      tagline: 'Distinguished Speaker Dialogues',
+      desc: 'Inspirational sessions and panel discussions featuring insights from globally distinguished speakers and industry pioneers.',
+      image: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80',
+      accentColor: '#F59E0B', // Warm Amber
+      bgTone: 'rgba(245, 158, 11, 0.05)',
+      borderTone: 'rgba(245, 158, 11, 0.25)',
+      icon: Mic,
+      deliverables: ['ACM Speaker Sessions', 'Industry Trends', 'Interactive Q&A'],
+      scope: 'Industry & Research'
+    },
+    {
+      id: 'sandbox-projects',
+      track: '04',
+      title: 'Sandbox Projects',
+      tagline: 'Open-Source Incubation',
+      desc: 'Dedicated collaborative spaces to experiment with open-source systems, deploy APIs, and build portfolio-grade products.',
+      image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80',
+      accentColor: '#6366F1', // ACM Indigo
+      bgTone: 'rgba(99, 102, 241, 0.05)',
+      borderTone: 'rgba(99, 102, 241, 0.25)',
+      icon: Boxes,
+      deliverables: ['Open-Source Repos', 'API & Microservices', 'Peer Code Reviews'],
+      scope: 'Product Incubation'
+    },
+    {
+      id: 'arena-battles',
+      track: '05',
+      title: 'Arena Battles',
+      tagline: 'National Algorithmic Tournaments',
+      desc: 'High-stakes national coding tournaments designed to test algorithmic speed, logic, and problem-solving skills.',
+      image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80',
+      accentColor: '#DC2626', // Crimson Red
+      bgTone: 'rgba(220, 38, 38, 0.05)',
+      borderTone: 'rgba(220, 38, 38, 0.25)',
+      icon: Trophy,
+      deliverables: ['Competitive Contests', 'ICPC Style Rounds', 'Live Leaderboards'],
+      scope: 'Algorithms & Rigor'
+    },
+    {
+      id: 'nexus-mixers',
+      track: '06',
+      title: 'Nexus Mixers',
+      tagline: 'Strategic Mentorship Hubs',
+      desc: 'Strategic networking hubs connecting passionate tech students with prominent alumni, recruiters, and mentors worldwide.',
+      image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80',
+      accentColor: '#0D9488', // Deep Teal
+      bgTone: 'rgba(13, 148, 136, 0.05)',
+      borderTone: 'rgba(13, 148, 136, 0.25)',
+      icon: Network,
+      deliverables: ['Alumni Mentorship', 'Career Conclaves', 'Research Synergy'],
+      scope: 'Community & Careers'
+    }
+  ];
 
   return (
-    <div style={{ backgroundColor: '#ffffff', overflow: 'hidden' }}>
+    <div style={{ backgroundColor: '#FCFCFD', color: 'var(--navy-900)' }}>
       
-      {/* 1. Hero Section */}
-      <section className="section" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid var(--border)', padding: '100px 0' }}>
-        <div className="container hero-layout" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '64px', alignItems: 'center' }}>
-          
-          {/* Left Text Column */}
-          <div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '20px', overflow: 'hidden' }}>
-              <span className="hero-label-slide" style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'inline-block' }}>
-                Koneru Lakshmaiah Education Foundation
-              </span>
-            </div>
+      {/* =========================================================================
+          1. OFFICIAL CHAPTER HERO (Editorial Academic Layout)
+          ========================================================================= */}
+      <motion.section 
+        style={{ 
+          opacity: heroOpacity,
+          position: 'relative',
+          padding: '88px 0 76px 0',
+          borderBottom: '1px solid var(--border-light)',
+          backgroundColor: '#FFFFFF'
+        }}
+      >
+        <div className="container">
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '56px', alignItems: 'center' }} className="hero-official-grid">
             
-            <h1 className="hero-kinetic-title" style={{ fontSize: 'clamp(44px, 7vw, 92px)', fontWeight: '800', letterSpacing: '-0.03em', marginBottom: '24px', color: 'var(--secondary)', lineHeight: '1.05' }}>
-              <div style={{ overflow: 'hidden' }}>
-                <span className="hero-reveal-line-1" style={{ display: 'inline-block' }}>KLU ACM</span>
-              </div>
-              <div style={{ overflow: 'hidden' }}>
-                <span className="hero-reveal-line-2" style={{ display: 'inline-block', fontWeight: '500', color: 'var(--text-muted)' }}>STUDENT CHAPTER</span>
-              </div>
-            </h1>
-
-            <div style={{ fontSize: 'clamp(18px, 2vw, 22px)', fontWeight: '600', color: 'var(--primary)', marginBottom: '24px', letterSpacing: '-0.01em', lineHeight: '1.3' }}>
-              <TextReveal text={heroTitle} duration={900} delay={500} />
-            </div>
-            
-            <p style={{ fontSize: '1rem', color: 'var(--text-main)', marginBottom: '32px', lineHeight: '1.65', maxWidth: '540px' }}>
-              {sentences.map((sentence, idx) => (
-                <span key={idx} style={{ display: 'inline-block', marginRight: '6px', overflow: 'hidden', verticalAlign: 'bottom' }}>
-                  <span style={getSentenceStyle(idx)}>
-                    {sentence}
-                  </span>
-                </span>
-              ))}
-            </p>
-            
-            <ScrollReveal delay={1200} duration={700} yOffset={15}>
-              <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-                <Link to="/events" className="btn btn-primary btn-sm">
-                  Explore Events
-                </Link>
-                <Link to="/about-klef-acm" style={{ fontSize: '0.85rem', color: 'var(--secondary)', fontWeight: '600', textDecoration: 'none', borderBottom: '1px solid var(--border)' }} className="text-hover-line">
-                  About the Chapter
-                </Link>
-              </div>
-            </ScrollReveal>
-          </div>
-          
-          {/* Right Image Column */}
-          <ScrollReveal delay={200} duration={900} animationType="reveal">
-            <div style={parallaxTransform}>
-              <div 
-                style={{ 
-                  width: '100%', 
-                  aspectRatio: '16/10',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--bg-main)',
-                  backgroundImage: heroImageUrl ? `url(${heroImageUrl})` : 'none',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '24px',
-                  textAlign: 'center',
-                  color: 'var(--text-muted)'
-                }}
-              >
-                {!heroImageUrl && (
-                  <>
-                    <ImageIcon size={28} style={{ color: 'var(--primary)', marginBottom: '10px', opacity: 0.6 }} />
-                    <span style={{ fontWeight: '600', fontSize: '0.85rem', color: 'var(--secondary)' }}>Chapter Activity Media Frame</span>
-                    <span style={{ fontSize: '0.75rem', marginTop: '4px', opacity: 0.8 }}>Placeholder — Upload photograph in CMS</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* Editorial Marquee Divider */}
-      <EditorialMarquee />
-
-      {/* 2. About the Chapter Section (Typographic Stats Integration) */}
-      <section className="section" style={{ backgroundColor: 'var(--bg-main)', borderBottom: '1px solid var(--border)', padding: '100px 0' }}>
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '64px', alignItems: 'start' }}>
-          
-          {/* Left Text */}
-          <ScrollReveal delay={50} duration={700}>
+            {/* Left Column: Official Branding & Chapter Info */}
             <div>
-              <EditorialLabel number="01" label="CHAPTER PROFILE" />
-              <h2 style={{ fontSize: '1.8rem', color: 'var(--secondary)', marginBottom: '20px', lineHeight: '1.2' }}>
-                <ScrollScaleText>
-                  {introHeading}
-                </ScrollScaleText>
-              </h2>
-              <p style={{ fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.7', maxWidth: '620px', whiteSpace: 'pre-line' }}>
-                {introText}
-              </p>
-            </div>
-          </ScrollReveal>
-          
-          {/* Right Metrics Grid - Only displays if real data exists */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {hasStats ? (
-              <ScrollReveal delay={100} duration={800}>
-                <div>
-                  <h3 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: '8px', margin: '0 0 20px 0' }}>
-                    Chapter Metrics
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                    {statsEvents && (
-                      <div style={{ borderLeft: '2px solid var(--border)', paddingLeft: '16px' }}>
-                        <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--secondary)', lineHeight: '1.1' }}>{statsEvents}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600', marginTop: '4px', textTransform: 'uppercase' }}>Technical Events</div>
-                      </div>
-                    )}
-                    {statsMembers && (
-                      <div style={{ borderLeft: '2px solid var(--border)', paddingLeft: '16px' }}>
-                        <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--secondary)', lineHeight: '1.1' }}>{statsMembers}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600', marginTop: '4px', textTransform: 'uppercase' }}>Active Members</div>
-                      </div>
-                    )}
-                    {statsWorkshops && (
-                      <div style={{ borderLeft: '2px solid var(--border)', paddingLeft: '16px' }}>
-                        <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--secondary)', lineHeight: '1.1' }}>{statsWorkshops}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600', marginTop: '4px', textTransform: 'uppercase' }}>Tech Workshops</div>
-                      </div>
-                    )}
-                    {statsProjects && (
-                      <div style={{ borderLeft: '2px solid var(--border)', paddingLeft: '16px' }}>
-                        <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--secondary)', lineHeight: '1.1' }}>{statsProjects}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600', marginTop: '4px', textTransform: 'uppercase' }}>Research Projects</div>
-                      </div>
-                    )}
-                  </div>
+              {/* Sharp Vector Typography for KLEF ACM */}
+              <motion.div 
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                style={{ marginBottom: '24px' }}
+              >
+                <div className="editorial-kicker">
+                  KLEF ACM Student Chapter
                 </div>
-              </ScrollReveal>
-            ) : (
-              <div style={{ borderLeft: '3px solid var(--border)', paddingLeft: '16px', color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>
-                Chapter coordination metrics will be displayed once updated in CMS.
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Community Section */}
-      <section className="section" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid var(--border)', padding: '100px 0', position: 'relative' }}>
-        <OversizedText text="COMMUNITY" speed={0.06} direction="left" />
-        <div className="container community-section-grid" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '48px', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-          
-          <ScrollReveal delay={0} duration={850}>
-            <div>
-              <EditorialLabel number="02" label="COMMUNITY INTEGRATION" />
-              <h2 style={{ fontSize: '1.8rem', color: 'var(--secondary)', marginBottom: '20px', lineHeight: '1.2' }}>
-                Advancing <WordHighlight>Computing Communities</WordHighlight>
-              </h2>
-              <p style={{ color: 'var(--text-main)', fontSize: '0.95rem', lineHeight: '1.7', marginBottom: '16px' }}>
-                The KLU ACM Student Chapter brings student developers together to share technical knowledge, build systems, and explore foundational questions in computing.
-              </p>
-              <p style={{ color: 'var(--text-main)', fontSize: '0.95rem', lineHeight: '1.7', margin: 0 }}>
-                By participating in bootcamps, technical review groups, and open discussions, our members develop direct leadership capabilities and computing competence.
-              </p>
-            </div>
-          </ScrollReveal>
-          
-          <ScrollReveal delay={150} duration={900} animationType="scale-up" style={{ zIndex: 10 }}>
-            <div 
-              style={{ 
-                width: '100%', 
-                aspectRatio: '3/2', 
-                backgroundColor: 'var(--bg-main)', 
-                backgroundImage: communityImageUrl ? `url(${communityImageUrl})` : 'none',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-sm)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--text-muted)',
-                fontSize: '0.8rem',
-                fontWeight: '500',
-                padding: '16px',
-                textAlign: 'center',
-                boxShadow: 'var(--shadow-lg)'
-              }}
-            >
-              {!communityImageUrl && (
-                <>
-                  <Users size={24} style={{ color: 'var(--primary)', marginBottom: '8px', opacity: 0.6 }} />
-                  <span style={{ fontWeight: '600', color: 'var(--secondary)' }}>Chapter Community Photograph</span>
-                  <span style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '2px' }}>Placeholder (3:2) — Upload in CMS</span>
-                </>
-              )}
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* 4. Awards & Recognition Section */}
-      <section className="section" style={{ backgroundColor: 'var(--bg-main)', borderBottom: '1px solid var(--border)', padding: '100px 0', position: 'relative' }}>
-        <OversizedText text="RECOGNITION" speed={0.06} direction="right" />
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.2fr', gap: '64px', alignItems: 'start', position: 'relative', zIndex: 2 }}>
-          
-          <ScrollReveal delay={0} duration={850}>
-            <div>
-              <EditorialLabel number="03" label="RECOGNITION" />
-              <h2 style={{ fontSize: '1.8rem', color: 'var(--secondary)', marginBottom: '20px', lineHeight: '1.2' }}>
-                <ScrollScaleText>
-                  Awards & Achievements
-                </ScrollScaleText>
-              </h2>
-              <div 
-                style={{ 
-                  width: '100%', 
-                  aspectRatio: '4/3', 
-                  backgroundColor: '#fff', 
-                  backgroundImage: awardsImageUrl ? `url(${awardsImageUrl})` : 'none',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-sm)',
+                <h1 style={{ 
+                  fontSize: 'clamp(80px, 12vw, 140px)', 
+                  fontWeight: '900', 
+                  letterSpacing: '-0.04em', 
+                  lineHeight: '0.88', 
+                  margin: 0,
+                  textTransform: 'uppercase',
                   display: 'flex',
                   flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.8rem',
-                  fontWeight: '500',
-                  padding: '16px',
-                  textAlign: 'center',
-                  boxShadow: 'var(--shadow-sm)'
-                }}
-              >
-                {!awardsImageUrl && (
-                  <>
-                    <Award size={24} style={{ color: 'var(--primary)', marginBottom: '8px', opacity: 0.6 }} />
-                    <span style={{ fontWeight: '600', color: 'var(--secondary)' }}>Achievements / Trophy Frame</span>
-                    <span style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '2px' }}>Placeholder (4:3) — Upload in CMS</span>
-                  </>
-                )}
+                  userSelect: 'none'
+                }}>
+                  <span style={{ color: 'var(--kl-red)', display: 'block' }}>KLEF</span>
+                  <span style={{ color: 'var(--acm-blue)', display: 'block' }}>ACM</span>
+                </h1>
+              </motion.div>
+
+              <VisualEditable
+                name="hero_description"
+                as="p"
+                defaultValue={homeData.hero_description || homeData.hero?.description || 'The official student chapter of the Association for Computing Machinery at Koneru Lakshmaiah Education Foundation. Advancing computing as a science and profession through hands-on development, research, and technical competitions.'}
+                style={{ fontSize: '1.1rem', color: 'var(--slate-600)', lineHeight: '1.75', maxWidth: '580px', margin: '0 0 36px 0' }}
+              />
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Link 
+                  to="/Events" 
+                  className="btn btn-primary"
+                  style={{ 
+                    padding: '12px 26px', 
+                    borderRadius: '4px', 
+                    fontSize: '0.92rem', 
+                    fontWeight: '700',
+                    backgroundColor: 'var(--primary)',
+                    borderColor: 'var(--primary)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <span>View Chapter Events</span>
+                  <ArrowRight size={16} />
+                </Link>
+
+                <Link 
+                  to="/About-KLEF-ACM" 
+                  className="btn btn-secondary"
+                  style={{ 
+                    padding: '12px 22px', 
+                    borderRadius: '4px', 
+                    fontSize: '0.92rem', 
+                    fontWeight: '600'
+                  }}
+                >
+                  About Chapter
+                </Link>
+
+                <Link 
+                  to="/Contact" 
+                  className="btn btn-secondary"
+                  style={{ 
+                    padding: '12px 22px', 
+                    borderRadius: '4px', 
+                    fontSize: '0.92rem', 
+                    fontWeight: '600'
+                  }}
+                >
+                  Contact Desk
+                </Link>
               </div>
             </div>
-          </ScrollReveal>
-          
-          <div style={{ marginTop: '28px' }}>
-            {achievements && achievements.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {achievements.map((ach, idx) => (
-                  <ScrollReveal key={idx} delay={idx * 150} duration={750}>
-                    <div style={{ paddingLeft: '24px', borderLeft: '2px solid var(--primary)', position: 'relative' }}>
-                      <div style={{
-                        position: 'absolute',
-                        left: '-5px',
-                        top: '6px',
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: 'var(--primary)'
-                      }} />
-                      <h3 style={{ fontSize: '1rem', color: 'var(--secondary)', fontWeight: '700', marginBottom: '6px', marginTop: 0 }}>{ach.title}</h3>
-                      <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.6', margin: 0 }}>{ach.description}</p>
-                    </div>
-                  </ScrollReveal>
-                ))}
-              </div>
-            ) : (
-              <div style={{ 
-                padding: '48px', 
-                textAlign: 'center', 
-                border: '1px dashed var(--border)', 
-                borderRadius: 'var(--radius-sm)',
-                backgroundColor: '#ffffff',
-                color: 'var(--text-muted)',
-                fontSize: '0.9rem'
-              }}>
-                Official awards and academic milestone recognitions will be updated soon.
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
 
-      {/* Editorial Marquee Divider */}
-      <EditorialMarquee />
-
-      {/* 5. Research & Innovation Section */}
-      <section className="section" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid var(--border)', padding: '100px 0', position: 'relative' }}>
-        <OversizedText text="RESEARCH" speed={0.06} direction="left" />
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '64px', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-          
-          {/* Left Title & Media Reveal */}
-          <div>
-            <ScrollReveal delay={0} duration={850}>
-              <div>
-                <EditorialLabel number="04" label="RESEARCH DEVELOPMENT" />
-                <h2 style={{ fontSize: '1.8rem', color: 'var(--secondary)', marginBottom: '16px', lineHeight: '1.2' }}>
-                  Scientific & <WordHighlight>Technical Research</WordHighlight>
-                </h2>
-                <p style={{ color: 'var(--text-main)', fontSize: '0.95rem', lineHeight: '1.7', marginBottom: '24px', maxWidth: '600px' }}>
-                  Aligning with ACM's role as a scientific computing society, the chapter supports student researchers in learning academic presentation methods and preparing peer-reviewed drafts.
-                </p>
-              </div>
-            </ScrollReveal>
-            
-            <ScrollReveal delay={100} duration={850} animationType="reveal">
-              <div 
-                style={{ 
-                  width: '100%', 
-                  maxWidth: '540px',
-                  aspectRatio: '16/10', 
-                  backgroundColor: 'var(--bg-main)', 
-                  backgroundImage: researchImageUrl ? `url(${researchImageUrl})` : 'none',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-sm)',
+            {/* Right Column: Official Chapter Emblem */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                style={{
+                  width: '100%',
+                  maxWidth: '560px',
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.8rem',
-                  fontWeight: '500',
-                  padding: '16px',
-                  textAlign: 'center'
+                  padding: '28px 24px',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '10px',
+                  backgroundColor: '#FFFFFF'
                 }}
+                className="hero-logo-card"
               >
-                {!researchImageUrl && (
-                  <>
-                    <FileText size={24} style={{ color: 'var(--primary)', marginBottom: '8px', opacity: 0.6 }} />
-                    <span style={{ fontWeight: '600', color: 'var(--secondary)' }}>Research / Project Media Frame</span>
-                    <span style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '2px' }}>Placeholder — Upload in CMS</span>
-                  </>
-                )}
-              </div>
-            </ScrollReveal>
-          </div>
-          
-          {/* Right side: Research areas revealing on scroll */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <ScrollReveal delay={150} duration={800} yOffset={20}>
-              <div style={{ padding: '24px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-main)', transition: 'border-color 0.2s ease' }} className="card-hover-border">
-                <strong style={{ display: 'block', color: 'var(--secondary)', marginBottom: '8px', fontSize: '1rem' }}>Systems Computing</strong>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>Distributed systems, compiler architecture, and network routing security experiments.</span>
-              </div>
-            </ScrollReveal>
+                <img 
+                  src={kluLogo} 
+                  alt="KLEF ACM Official Chapter Emblem" 
+                  style={{ 
+                    width: '100%', 
+                    maxWidth: '520px', 
+                    height: 'auto', 
+                    objectFit: 'contain',
+                    cursor: 'pointer'
+                  }} 
+                  onClick={() => setZoomedImage({ url: kluLogo, title: 'KLEF ACM Official Chapter Emblem' })}
+                  title="Click to view emblem full screen"
+                />
+              </motion.div>
+            </div>
 
-            <ScrollReveal delay={300} duration={800} yOffset={20}>
-              <div style={{ padding: '24px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-main)', transition: 'border-color 0.2s ease' }} className="card-hover-border">
-                <strong style={{ display: 'block', color: 'var(--secondary)', marginBottom: '8px', fontSize: '1rem' }}>Data Science</strong>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>Foundational predictive models, computing statistics, and analytics applications.</span>
-              </div>
-            </ScrollReveal>
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* 6. Featured Upcoming Activity Section */}
-      {featuredEvent ? (
-        <section className="section" style={{ backgroundColor: 'var(--bg-main)', borderBottom: '1px solid var(--border)', padding: '100px 0', position: 'relative' }}>
-          <OversizedText text="ACTIVITIES" speed={0.06} direction="right" />
-          <div className="container" style={{ position: 'relative', zIndex: 2 }}>
-            <EditorialLabel number="05" label="FEATURED ACTIVITY" />
-            <h2 style={{ fontSize: '1.8rem', color: 'var(--secondary)', marginBottom: '32px' }}>
-              <ScrollScaleText>
-                Next Chapter Activity
-              </ScrollScaleText>
+      {/* =========================================================================
+          2. CHAPTER INITIATIVES & ACTIVITIES (Editorial Grid)
+          ========================================================================= */}
+      <section style={{ padding: '92px 0', backgroundColor: '#FFFFFF', borderBottom: '1px solid var(--border-light)' }}>
+        <div className="container">
+          
+          {/* Section Header */}
+          <div style={{ maxWidth: '720px', marginBottom: '52px' }}>
+            <div className="editorial-kicker">
+              ACM Technical Divisions & Programs
+            </div>
+            <h2 style={{ fontSize: 'clamp(28px, 3.8vw, 42px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '-0.025em', margin: '0 0 14px 0', lineHeight: '1.2' }}>
+              Chapter Initiatives & Activities
             </h2>
-            
-            <ScrollReveal delay={0} duration={850}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '48px', alignItems: 'center' }} className="featured-event-grid">
-                <ScrollReveal delay={100} duration={800} animationType="reveal">
-                  <div
-                    style={{
-                      aspectRatio: '16/10',
-                      backgroundColor: '#ffffff',
-                      borderRadius: 'var(--radius-sm)',
-                      backgroundImage: featuredEvent.image_url ? `url(${featuredEvent.image_url})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      border: '1px solid var(--border)',
-                      minHeight: '240px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--text-muted)',
-                      fontSize: '0.9rem',
-                      fontWeight: '500'
-                    }}
-                  >
-                    {!featuredEvent.image_url && <span>Event Photograph Placeholder</span>}
+            <p style={{ color: 'var(--slate-600)', fontSize: '1rem', lineHeight: '1.7', margin: 0 }}>
+              A systematic technical roadmap structured to cultivate excellence in software engineering, applied research, cloud systems design, and algorithmic problem solving.
+            </p>
+          </div>
+
+          {/* 6-Track Matrix with Architectural Discipline */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '32px' }}>
+            {initiatives.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.id}
+                  className="elevate-card"
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '4px',
+                    border: '1px solid var(--border-light)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    
+                  }}
+                >
+                  {/* Cover Photography */}
+                  <div style={{ position: 'relative', height: '220px', backgroundColor: 'var(--navy-950)', overflow: 'hidden' }}>
+                    <SafeImage
+                      src={item.image}
+                      alt={item.title}
+                      fallbackIcon={Icon}
+                      fallbackText={item.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   </div>
-                </ScrollReveal>
-                <div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '8px' }}>
-                    {new Date(featuredEvent.date) >= new Date() ? 'Upcoming Session' : 'Recent Event'}
-                  </span>
-                  <h3 style={{ fontSize: '1.6rem', marginBottom: '12px', color: 'var(--secondary)' }}>{featuredEvent.title}</h3>
-                  <div style={{ display: 'flex', gap: '16px', color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    <span>📅 {new Date(featuredEvent.date).toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
-                    <span>📍 {featuredEvent.venue}</span>
-                    {featuredEvent.speaker && <span>🎤 Speaker: {featuredEvent.speaker}</span>}
-                  </div>
-                  <p style={{ color: 'var(--text-main)', marginBottom: '24px', lineHeight: '1.6', fontSize: '0.95rem' }}>
-                    {featuredEvent.description.substring(0, 220)}...
-                  </p>
-                  <div style={{ display: 'flex', gap: '16px' }}>
-                    {featuredEvent.registration_link && new Date(featuredEvent.date) >= new Date() && (
-                      <a href={featuredEvent.registration_link} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">
-                        Register Now
-                      </a>
-                    )}
-                    <Link to="/events" className="btn btn-secondary btn-sm">
-                      All Events
-                    </Link>
+
+                  {/* Body Content */}
+                  <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    
+                    {/* Title & Tagline */}
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--navy-900)', marginBottom: '4px', letterSpacing: '-0.02em' }}>
+                      {item.title}
+                    </h3>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
+                      {item.tagline}
+                    </div>
+
+                    {/* Core Description */}
+                    <p style={{ color: 'var(--slate-600)', fontSize: '0.92rem', lineHeight: '1.65', margin: '0 0 20px 0', flex: 1 }}>
+                      {item.desc}
+                    </p>
+
+                    {/* Deliverables / Focus Highlights */}
+                    <div style={{ backgroundColor: 'var(--slate-50)', borderRadius: '4px', padding: '12px 14px', border: '1px solid var(--border-subtle)', marginBottom: '20px' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--slate-500)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>
+                        Key Outcomes
+                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {item.deliverables.map((deliv, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--navy-700)', fontWeight: '500' }}>
+                            <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: item.accentColor }} />
+                            <span>{deliv}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Card Footer Link */}
+                    <div style={{ paddingTop: '14px', borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        Chapter Program
+                      </span>
+                      <Link 
+                        to="/Events" 
+                        style={{ 
+                          color: 'var(--primary)', 
+                          fontWeight: '700', 
+                          fontSize: '0.84rem', 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '6px', 
+                          textDecoration: 'none' 
+                        }}
+                      >
+                        <span>View Schedule</span>
+                        <ArrowRight size={14} />
+                      </Link>
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </section>
+
+      {/* =========================================================================
+          3. FEATURED LIVE CHAPTER SESSION (CMS Bound)
+          ========================================================================= */}
+      {featuredEvent ? (
+        <section style={{ padding: '88px 0', backgroundColor: 'var(--slate-50)', borderBottom: '1px solid var(--border-light)' }}>
+          <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '36px', flexWrap: 'wrap', gap: '16px' }}>
+              <div>
+                <div className="editorial-kicker">
+                  Chapter Bulletin
+                </div>
+                <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '-0.02em', margin: 0 }}>
+                  Featured Chapter Session
+                </h2>
               </div>
-            </ScrollReveal>
+              <Link to="/Events" style={{ color: 'var(--primary)', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', textDecoration: 'none' }}>
+                All Chapter Events <ArrowRight size={15} />
+              </Link>
+            </div>
+
+            <div 
+              style={{
+                borderRadius: '4px',
+                border: '1px solid var(--border-light)',
+                backgroundColor: '#FFFFFF',
+                padding: '36px',
+                display: 'grid',
+                gridTemplateColumns: featuredEvent.image_url ? '1fr 1.3fr' : '1fr',
+                gap: '36px',
+                alignItems: 'center'
+              }}
+              className="featured-event-grid"
+            >
+              {featuredEvent.image_url && (
+                <div style={{ minHeight: '240px', maxHeight: '320px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border-light)', backgroundColor: '#FFFFFF' }}>
+                  <SafeImage 
+                    src={featuredEvent.image_url} 
+                    alt={featuredEvent.title} 
+                    fit="contain"
+                    style={{ maxHeight: '300px', maxWidth: '100%' }}
+                    fallbackIcon={Calendar}
+                    fallbackText="Featured Event"
+                  />
+                </div>
+              )}
+              <div>
+                <span className="badge badge-primary" style={{ marginBottom: '10px' }}>
+                  {new Date(featuredEvent.date) >= new Date() ? 'Upcoming Session' : 'Recent Session'}
+                </span>
+                <h3 style={{ fontSize: '1.6rem', color: 'var(--navy-900)', fontWeight: '800', marginBottom: '12px', letterSpacing: '-0.02em' }}>
+                  {featuredEvent.title}
+                </h3>
+                <div style={{ display: 'flex', gap: '18px', color: 'var(--slate-500)', fontSize: '0.86rem', marginBottom: '16px', flexWrap: 'wrap', fontWeight: '500' }}>
+                  <span>📅 {new Date(featuredEvent.date).toLocaleDateString('en-US', { dateStyle: 'medium' })}</span>
+                  <span>📍 {featuredEvent.venue}</span>
+                  {featuredEvent.speaker && <span>🎤 {featuredEvent.speaker}</span>}
+                </div>
+                <p style={{ color: 'var(--slate-600)', marginBottom: '24px', lineHeight: '1.7', fontSize: '0.96rem' }}>
+                  {featuredEvent.description?.substring(0, 240)}...
+                </p>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {featuredEvent.registration_link && new Date(featuredEvent.date) >= new Date() && (
+                    <a 
+                      href={featuredEvent.registration_link} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="btn btn-primary"
+                      style={{ borderRadius: '4px', padding: '10px 22px' }}
+                    >
+                      Register Online <ArrowRight size={15} />
+                    </a>
+                  )}
+                  <Link to="/Events" className="btn btn-secondary" style={{ borderRadius: '4px', padding: '10px 20px' }}>
+                    View Full Schedule
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       ) : null}
 
-      {/* Editorial Marquee Divider */}
-      <EditorialMarquee />
-
-      {/* 7. Recent Highlights / Gallery Teaser */}
-      <section className="section" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid var(--border)', padding: '100px 0', position: 'relative' }}>
-        <OversizedText text="MOMENTS" speed={0.06} direction="left" />
-        <div className="container" style={{ position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
-            <ScrollReveal delay={0} duration={700}>
-              <div>
-                <EditorialLabel number="06" label="RECENT ARCHIVE" />
-                <h2 style={{ fontSize: '1.8rem', color: 'var(--secondary)', margin: 0 }}>
-                  Recent <WordHighlight>Moments</WordHighlight>
-                </h2>
+      {/* =========================================================================
+          4. LEADERSHIP & TEAM SPOTLIGHT
+          ========================================================================= */}
+      <section style={{ padding: '88px 0', backgroundColor: '#FFFFFF', borderBottom: '1px solid var(--border-light)' }}>
+        <div className="container">
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '36px', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <div className="editorial-kicker">
+                Executive Leadership
               </div>
-            </ScrollReveal>
-            <ScrollReveal delay={100} duration={700}>
-              <Link to="/gallery" style={{ color: 'var(--primary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', textDecoration: 'none' }} className="text-hover-arrow">
-                View Gallery <ArrowRight size={14} className="arrow-icon" style={{ transition: 'transform 0.2s ease' }} />
-              </Link>
-            </ScrollReveal>
+              <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', color: 'var(--navy-900)', margin: 0, letterSpacing: '-0.02em', fontWeight: '800' }}>
+                Chapter Committee & Leadership
+              </h2>
+            </div>
+            <Link to="/Members" style={{ color: 'var(--primary)', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', textDecoration: 'none' }}>
+              <span>View Core Committee Roster</span> <ArrowRight size={15} />
+            </Link>
           </div>
 
-          {galleryTeaser.length === 0 ? (
-            <div className="card text-center" style={{ padding: '40px', backgroundColor: 'var(--bg-main)' }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Highlights will populate once pictures are uploaded to the CMS.</p>
+          {/* Chapter Group Photo Showcase Frame or Placeholder - Uncropped with Lightbox Zoom */}
+          <div
+            style={{
+              borderRadius: '16px',
+              overflow: 'hidden',
+              border: '1.5px solid var(--border-light)',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.05)',
+              position: 'relative'
+            }}
+          >
+            {teamGroupPhoto ? (
+              <div 
+                style={{ 
+                  width: '100%', 
+                  backgroundColor: '#070B14', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '16px',
+                  boxSizing: 'border-box',
+                  cursor: 'pointer',
+                  position: 'relative'
+                }}
+                onClick={() => setZoomedImage({ url: teamGroupPhoto, title: 'KLEF ACM Student Chapter Leadership Cohort' })}
+                title="Click to expand full size"
+              >
+                <img
+                  src={teamGroupPhoto}
+                  alt="KLEF ACM Student Chapter Team Cohort"
+                  style={{ 
+                    width: '100%', 
+                    maxHeight: '620px', 
+                    height: 'auto', 
+                    objectFit: 'contain', 
+                    borderRadius: '8px', 
+                    display: 'block',
+                    boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4)' 
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '24px',
+                  right: '24px',
+                  backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                  color: '#FFFFFF',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.78rem',
+                  fontWeight: '700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backdropFilter: 'blur(6px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                }}>
+                  <Maximize2 size={13} />
+                  <span>Click to expand</span>
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  padding: '72px 24px',
+                  background: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px dashed #CBD5E1',
+                  borderRadius: '16px',
+                  margin: '8px'
+                }}
+              >
+                <div 
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '16px',
+                    backgroundColor: 'rgba(0, 92, 169, 0.08)',
+                    color: 'var(--primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '16px',
+                    border: '1px solid rgba(0, 92, 169, 0.15)'
+                  }}
+                >
+                  <Users size={30} />
+                </div>
+
+                <span style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--primary)', marginBottom: '6px' }}>
+                  Official Cohort Showcase
+                </span>
+
+                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--navy-900)', margin: '0 0 8px 0' }}>
+                  KLEF ACM Student Chapter Group Photo
+                </h3>
+                
+                <p style={{ color: 'var(--slate-600)', fontSize: '0.94rem', maxWidth: '500px', lineHeight: '1.6', margin: '0' }}>
+                  Faculty coordinators, executive committee officers, and technical division leads of the KLEF ACM Student Chapter.
+                </p>
+              </div>
+            )}
+
+            {/* Bottom Bar Under Group Photo: Explore Members Directory */}
+            <div
+              style={{
+                padding: '18px 24px',
+                backgroundColor: '#FFFFFF',
+                borderTop: '1px solid var(--border-light)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '14px'
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '0.92rem', fontWeight: '800', color: 'var(--navy-900)', display: 'block' }}>
+                  Meet the Dedicated Leadership Team
+                </span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--slate-500)' }}>
+                  Faculty mentors, office bearers, SIG leads & student committee members
+                </span>
+              </div>
+
+              <Link 
+                to="/Members" 
+                className="btn btn-primary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 22px',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  fontSize: '0.88rem'
+                }}
+              >
+                <Users size={16} />
+                <span>Explore Members Directory</span>
+                <ArrowRight size={14} />
+              </Link>
             </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-              {galleryTeaser.map((img, idx) => (
-                <ScrollReveal key={img.id} delay={idx * 100} duration={750} animationType="scale-up">
-                  <div
-                    style={{
-                      aspectRatio: '4/3',
-                      borderRadius: 'var(--radius-sm)',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      border: '1px solid var(--border)',
-                      backgroundColor: 'var(--bg-main)'
-                    }}
-                    className="image-reveal-wrapper"
-                  >
-                    <img
-                      src={img.url}
-                      alt={img.caption || 'KLU ACM highlight'}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }}
-                      className="zoom-image"
-                    />
-                    {img.caption && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          backgroundColor: 'rgba(15,23,42,0.85)',
-                          color: '#fff',
-                          padding: '8px',
-                          fontSize: '0.75rem',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {img.caption}
-                      </div>
-                    )}
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
       </section>
 
-      {/* 8. Call To Action (Institutional Banner) */}
-      <section className="section" style={{ backgroundColor: 'var(--bg-main)', padding: '100px 0' }}>
-        <ScrollReveal delay={0} duration={850} yOffset={25}>
+      {/* =========================================================================
+          5. INSTITUTIONAL CALL TO ACTION
+          ========================================================================= */}
+      <section style={{ backgroundColor: 'var(--slate-50)', padding: '88px 0' }}>
+        <div className="container">
           <div 
-            className="container" 
             style={{ 
-              maxWidth: '900px', 
+              maxWidth: '880px', 
+              margin: '0 auto',
               textAlign: 'center',
-              border: '1px solid var(--border)',
-              padding: '48px 24px',
-              borderRadius: 'var(--radius-sm)',
-              backgroundColor: '#ffffff'
+              border: '1px solid var(--border-light)',
+              padding: '56px 36px',
+              borderRadius: '4px',
+              backgroundColor: '#FFFFFF'
             }}
           >
-            <h2 style={{ fontSize: '2rem', color: 'var(--secondary)', marginBottom: '12px' }}>
-              Advancing Computing as a Science & Profession
+            <div style={{ width: '44px', height: '44px', borderRadius: '4px', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '18px' }}>
+              <Zap size={22} />
+            </div>
+            <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', color: 'var(--navy-900)', marginBottom: '14px', fontWeight: '800', letterSpacing: '-0.02em' }}>
+              Join the KLEF ACM Student Chapter
             </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.6', marginBottom: '28px', maxWidth: '600px', margin: '0 auto 28px auto' }}>
-              Join the global computing community. Access research journals, network with student developers, and participate in national hackathons.
+            <p style={{ color: 'var(--slate-600)', fontSize: '1rem', lineHeight: '1.7', marginBottom: '32px', maxWidth: '620px', margin: '0 auto 32px auto' }}>
+              Participate in student workshops, contribute to technical repositories, and represent KL Deemed to be University in regional and national computing contests.
             </p>
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-              <Link to="/events" className="btn btn-primary">
-                Explore Events
+            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link 
+                to="/Events" 
+                className="btn btn-primary"
+                style={{ borderRadius: '4px' }}
+              >
+                Explore Events <ArrowRight size={16} />
               </Link>
-              <Link to="/contact" className="btn btn-secondary">
-                Contact Chapter
+              <Link 
+                to="/Contact" 
+                className="btn btn-secondary"
+                style={{ borderRadius: '4px' }}
+              >
+                Contact Leadership
               </Link>
             </div>
           </div>
-        </ScrollReveal>
+        </div>
       </section>
 
-      {/* Inject styling locally for responsive grid, visual container, and hover reveals */}
+      {/* Free-Form Dynamic Content Blocks */}
+      <div className="container" style={{ padding: '0 24px' }}>
+        <PageBlockList blockKey="home_blocks" style={{ margin: '32px 0' }} />
+      </div>
+
+      {/* Full-Screen High-Resolution Photo Lightbox Modal - Attached to document.body via Portal */}
+      {zoomedImage && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 2147483647,
+            backgroundColor: 'rgba(5, 10, 20, 0.95)',
+            backdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            boxSizing: 'border-box',
+            overflow: 'hidden'
+          }}
+          onClick={() => setZoomedImage(null)}
+        >
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoomedImage(null);
+            }}
+            style={{
+              position: 'fixed',
+              top: '20px',
+              right: '24px',
+              zIndex: 2147483647,
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              color: '#FFFFFF',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '50%',
+              width: '44px',
+              height: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+              transition: 'background-color 0.2s ease, transform 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(220, 38, 38, 0.9)';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            title="Close (Esc)"
+          >
+            <X size={22} />
+          </button>
+
+          {/* Lightbox Image Container */}
+          <div
+            style={{
+              maxWidth: '92vw',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={zoomedImage.url}
+              alt={zoomedImage.title || 'Full resolution showcase'}
+              style={{
+                maxWidth: '92vw',
+                maxHeight: '82vh',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                borderRadius: '12px',
+                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8)',
+                border: '2px solid rgba(255, 255, 255, 0.15)',
+                display: 'block'
+              }}
+            />
+            {zoomedImage.title && (
+              <div style={{
+                marginTop: '14px',
+                color: '#FFFFFF',
+                fontSize: '1rem',
+                fontWeight: '700',
+                letterSpacing: '-0.01em',
+                textAlign: 'center',
+                backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                padding: '8px 20px',
+                borderRadius: '999px',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }}>
+                {zoomedImage.title}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Scoped responsive styles */}
       <style>{`
         @media (max-width: 900px) {
-          .hero-layout {
+          .hero-official-grid {
             grid-template-columns: 1fr !important;
-            gap: 32px !important;
+            gap: 36px !important;
           }
           .featured-event-grid {
             grid-template-columns: 1fr !important;
           }
-        }
-        
-        /* Premium hover transitions */
-        .text-hover-line {
-          position: relative;
-        }
-        .text-hover-line::after {
-          content: '';
-          position: absolute;
-          bottom: -2px;
-          left: 0;
-          width: 100%;
-          height: 1px;
-          background-color: var(--secondary);
-          transform: scaleX(0);
-          transform-origin: right;
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .text-hover-line:hover::after {
-          transform: scaleX(1);
-          transform-origin: left;
-        }
-
-        .text-hover-arrow:hover .arrow-icon {
-          transform: translateX(4px);
-        }
-
-        .card-hover-border:hover {
-          border-color: var(--primary) !important;
-        }
-
-        .image-reveal-wrapper:hover .zoom-image {
-          transform: scale(1.03);
-        }
-
-        @keyframes sentenceReveal {
-          from { transform: translateY(100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
         }
       `}</style>
     </div>

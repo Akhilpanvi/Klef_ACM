@@ -1,5 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="4" fill="#005CA9"/>
-  <text x="16" y="14" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="9" fill="#ffffff" letter-spacing="-0.3">KLU</text>
-  <text x="16" y="24" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="8" fill="#ffffff" letter-spacing="-0.1">ACM</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Outer Diamond & Accents -->
+  <polygon points="32,2 62,32 32,62 2,32" fill="#ffffff" stroke="#00A3E0" stroke-width="2"/>
+  <polyline points="2,32 14,32" stroke="#00A3E0" stroke-width="3" stroke-linecap="round"/>
+  <polyline points="50,32 62,32" stroke="#C8102E" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Central Navy Circle -->
+  <circle cx="32" cy="32" r="21" fill="#ffffff" stroke="#003366" stroke-width="3"/>
+  <circle cx="32" cy="32" r="18" fill="#ffffff" stroke="#00A3E0" stroke-width="0.8"/>
+  
+  <!-- ACM Text -->
+  <text x="32" y="32" dominant-baseline="central" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="14" fill="#003366" letter-spacing="-0.5">acm</text>
+  
+  <!-- K L UNIVERSITY Text -->
+  <text x="32" y="42" dominant-baseline="central" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="4" fill="#C8102E" letter-spacing="0.2">K L UNIVERSITY</text>
 </svg>

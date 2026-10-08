@@ -1,364 +1,1672 @@
-import { useContext, useState } from 'react';
-import { Mail, User, X, Info } from 'lucide-react';
+import { useContext, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Mail, 
+  User, 
+  X, 
+  ExternalLink, 
+  Plus, 
+  Edit3, 
+  Trash2, 
+  Upload, 
+  Loader2,
+  Globe,
+  ArrowLeft,
+  Share2,
+  Check,
+  BookOpen,
+  Maximize2,
+  Link as LinkIcon,
+  GripVertical,
+  MoveUp,
+  MoveDown
+} from 'lucide-react';
 import { SiteDataContext } from '../App';
-import { ScrollReveal, TextReveal } from '../components/ScrollReveal';
+import { ScrollReveal } from '../components/ScrollReveal';
+import SafeImage from '../components/SafeImage';
+import { api } from '../services/api';
+import VisualEditable from '../components/VisualEditor/VisualEditable';
+import PageBlockList from '../components/VisualEditor/PageBlockList';
 
-export default function Members() {
-  const { siteData } = useContext(SiteDataContext);
-  const members = siteData?.members || [];
+import { 
+  LinkedInIcon, 
+  GitHubIcon, 
+  TwitterIcon, 
+  InstagramIcon, 
+  cardColors, 
+  CARD_PALETTES, 
+  parseMemberData 
+} from '../utils/dataHelpers.jsx';
+
+
+export default function Members({ isVisualAdmin = false, isEditMode = false }) {
+  const { siteData, setSiteData, siteDataLoading, triggerDataRefresh } = useContext(SiteDataContext);
+  const rawMembers = siteData?.members || [];
+  const members = [...rawMembers].sort((a, b) => {
+    const orderA = parseMemberData(a).display_order;
+    const orderB = parseMemberData(b).display_order;
+    if (orderA !== orderB) return orderA - orderB;
+    return (a.id || 0) - (b.id || 0);
+  });
+  const params = useParams();
+  const navigate = useNavigate();
 
   const [selectedMember, setSelectedMember] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState(null); // { url, name, role }
 
-  // Group members by category
-  const faculty = members.filter(m => m.category === 'faculty_coordinator' && m.is_active);
-  
-  // Executive council includes: chair, vice_chair, secretary, treasurer, webmaster
-  const execRoles = ['chair', 'vice_chair', 'secretary', 'treasurer', 'webmaster'];
-  const executiveCouncil = members.filter(m => execRoles.includes(m.category) && m.is_active);
-  
-  // Technical and design leads
-  const leads = members.filter(m => (m.category === 'technical_lead' || m.category === 'other_lead') && m.is_active);
-  
-  // General Student Members
-  const studentMembers = members.filter(m => m.category === 'student_member' && m.is_active);
+  // Drag and drop interactive reordering states
+  const [draggedIdx, setDraggedIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+  const dragSourceRef = useRef(null);
 
-  // Helper to generate initials for avatar placeholder
+  // Admin Member Modal
+  const [memberModalOpen, setMemberModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
+  const [memberForm, setMemberForm] = useState({
+    name: '',
+    role: '',
+    category: 'chapter_member',
+    photograph_url: '',
+    biography: '',
+    email: '',
+    display_order: 0,
+    is_active: true,
+    custom_urls: [''], // Simple list of URLs only
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Reorder Members Handler (Move Up / Down & Drag-and-Drop)
+  const handleMoveMember = async (index, direction, e) => {
+    e?.stopPropagation();
+    const targetIdx = index + direction;
+    if (targetIdx < 0 || targetIdx >= members.length) return;
+
+    const updatedList = [...members];
+    const [movedItem] = updatedList.splice(index, 1);
+    updatedList.splice(targetIdx, 0, movedItem);
+
+    const updateItemWithOrder = (item, newOrder) => {
+      const parsed = parseMemberData(item);
+      const metadataPayload = { links: parsed.links, display_order: newOrder };
+      const rawBio = (item.biography || item.description || '').replace(/\n*<!--(?:KLEF|KLU)_LINKS:[\s\S]*?-->/g, '').trim();
+      return {
+        ...item,
+        display_order: newOrder,
+        biography: `${rawBio}\n\n<!--KLEF_LINKS:${JSON.stringify(metadataPayload)}-->`
+      };
+    };
+
+    const updatedPayloads = updatedList.map((item, idx) => updateItemWithOrder(item, idx + 1));
+
+    // Optimistic instant UI update
+    if (setSiteData) {
+      setSiteData(prev => ({ ...prev, members: updatedPayloads }));
+    }
+
+    const dbPayloads = updatedList.map((item, idx) => {
+      const newOrder = idx + 1;
+      const parsed = parseMemberData(item);
+      const metadataPayload = { links: parsed.links, display_order: newOrder };
+      const rawBio = (item.biography || item.description || '').replace(/\n*<!--(?:KLEF|KLU)_LINKS:[\s\S]*?-->/g, '').trim();
+      return {
+        id: item.id,
+        display_order: newOrder,
+        biography: `${rawBio}\n\n<!--KLEF_LINKS:${JSON.stringify(metadataPayload)}-->`
+      };
+    });
+
+    try {
+      await api.updateRows('members', dbPayloads);
+      await triggerDataRefresh(true);
+    } catch (err) {
+      console.error('Failed to move member:', err);
+    }
+  };
+
+  const handleDragStart = (e, index) => {
+    if (!isVisualAdmin) return;
+    dragSourceRef.current = index;
+    setDraggedIdx(index);
+    e.dataTransfer.effectAllowed = 'move';
+    try {
+      e.dataTransfer.setData('text/plain', String(index));
+    } catch {}
+  };
+
+  const handleDragOver = (e, index) => {
+    if (!isVisualAdmin) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIdx !== index) {
+      setDragOverIdx(index);
+    }
+  };
+
+  const handleDragLeave = (e, index) => {
+    if (dragOverIdx === index) {
+      setDragOverIdx(null);
+    }
+  };
+
+  const handleDrop = async (e, targetIdx) => {
+    if (!isVisualAdmin) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIdx(null);
+
+    let sourceIdx = dragSourceRef.current;
+    if (sourceIdx === null || sourceIdx === undefined) {
+      try {
+        const raw = e.dataTransfer.getData('text/plain');
+        if (raw !== '') sourceIdx = parseInt(raw, 10);
+      } catch {}
+    }
+
+    if (sourceIdx === null || isNaN(sourceIdx) || sourceIdx === targetIdx) {
+      setDraggedIdx(null);
+      dragSourceRef.current = null;
+      return;
+    }
+
+    const updatedList = [...members];
+    const [movedItem] = updatedList.splice(sourceIdx, 1);
+    updatedList.splice(targetIdx, 0, movedItem);
+
+    const updateItemWithOrder = (item, newOrder) => {
+      const parsed = parseMemberData(item);
+      const metadataPayload = { links: parsed.links, display_order: newOrder };
+      const rawBio = (item.biography || item.description || '').replace(/\n*<!--(?:KLEF|KLU)_LINKS:[\s\S]*?-->/g, '').trim();
+      return {
+        ...item,
+        display_order: newOrder,
+        biography: `${rawBio}\n\n<!--KLEF_LINKS:${JSON.stringify(metadataPayload)}-->`
+      };
+    };
+
+    const updatedPayloads = updatedList.map((item, idx) => updateItemWithOrder(item, idx + 1));
+
+    // Optimistic instant UI update (Zero-latency visual swap)
+    if (setSiteData) {
+      setSiteData(prev => ({ ...prev, members: updatedPayloads }));
+    }
+    setDraggedIdx(null);
+    dragSourceRef.current = null;
+    const dbPayloads = updatedList.map((item, idx) => {
+      const newOrder = idx + 1;
+      const parsed = parseMemberData(item);
+      const metadataPayload = { links: parsed.links, display_order: newOrder };
+      const rawBio = (item.biography || item.description || '').replace(/\n*<!--(?:KLEF|KLU)_LINKS:[\s\S]*?-->/g, '').trim();
+      return {
+        id: item.id,
+        display_order: newOrder,
+        biography: `${rawBio}\n\n<!--KLEF_LINKS:${JSON.stringify(metadataPayload)}-->`
+      };
+    });
+
+    try {
+      await api.updateRows('members', dbPayloads);
+      await triggerDataRefresh(true);
+    } catch (err) {
+      console.error('Failed to persist drag order:', err);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setTimeout(() => {
+      dragSourceRef.current = null;
+      setDraggedIdx(null);
+      setDragOverIdx(null);
+    }, 100);
+  };
+
+  // Match deep link /Members/:name or /Members/:name/:role
+  useEffect(() => {
+    if (params.name && members.length > 0) {
+      const targetParam = decodeURIComponent(params.name).toLowerCase().replace(/-/g, ' ');
+      const match = members.find(m => {
+        const cleanName = (m.name || '').toLowerCase();
+        return cleanName === targetParam || cleanName.replace(/\s+/g, '-') === params.name.toLowerCase();
+      });
+      if (match) {
+        setSelectedMember(match);
+      } else if (!siteDataLoading) {
+        navigate('/Members', { replace: true });
+      }
+    } else if (!params.name) {
+      setSelectedMember(null);
+    }
+  }, [params.name, members, siteDataLoading]);
+
+  // Keyboard escape and body scroll lock for photo lightbox
+  useEffect(() => {
+    if (zoomedImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (zoomedImage) {
+          setZoomedImage(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [zoomedImage]);
+
+  const selectMember = (member) => {
+    if (!member) {
+      setSelectedMember(null);
+      navigate('/Members', { replace: false });
+      return;
+    }
+    setSelectedMember(member);
+    const nameSlug = encodeURIComponent((member.name || 'member').trim().replace(/\s+/g, '-'));
+    const roleSlug = encodeURIComponent((member.role || 'Member').trim().replace(/\s+/g, '-'));
+    navigate(`/Members/${nameSlug}/${roleSlug}`, { replace: false });
+  };
+
   const getInitials = (name) => {
+    if (!name) return 'KM';
     return name
       .split(' ')
+      .filter(Boolean)
       .map(part => part[0])
       .join('')
       .substring(0, 2)
       .toUpperCase();
   };
 
-  const renderMemberCard = (member) => {
-    const hasPhoto = member.photograph_url && member.photograph_url.trim() !== '';
+  const handleCopyProfileLink = (member) => {
+    const nameSlug = encodeURIComponent((member.name || 'member').trim().replace(/\s+/g, '-'));
+    const roleSlug = encodeURIComponent(((member.role || 'Member')).trim().replace(/\s+/g, '-'));
+    const url = `${window.location.origin}/KLEF-ACM-SC/Members/${nameSlug}/${roleSlug}`;
+    navigator.clipboard?.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  // ---------------------------------------------------------------------------
+  // ADMIN MEMBER HANDLERS (Clean Single URL Field System)
+  // ---------------------------------------------------------------------------
+  const handleOpenAddMember = () => {
+    setEditingMember(null);
+    setMemberForm({
+      name: '',
+      role: '',
+      category: 'chapter_member',
+      photograph_url: '',
+      biography: '',
+      email: '',
+      display_order: members.length + 1,
+      is_active: true,
+      custom_urls: [''],
+    });
+    setFormError('');
+    setMemberModalOpen(true);
+  };
+
+  const handleOpenEditMember = (member, e) => {
+    e?.stopPropagation();
+    setEditingMember(member);
+
+    const parsed = parseMemberData(member);
+    const initialUrls = parsed.rawUrls.length > 0 ? parsed.rawUrls : [''];
+
+    setMemberForm({
+      name: member.name || '',
+      role: member.role || '',
+      category: member.category || 'chapter_member',
+      photograph_url: member.photograph_url || '',
+      biography: parsed.bio,
+      email: member.email || '',
+      display_order: member.display_order || 0,
+      is_active: member.is_active ?? true,
+      custom_urls: initialUrls,
+    });
+    setFormError('');
+    setMemberModalOpen(true);
+  };
+
+  const handleAddUrlField = () => {
+    setMemberForm(prev => ({
+      ...prev,
+      custom_urls: [...prev.custom_urls, '']
+    }));
+  };
+
+  const handleUpdateUrlField = (index, value) => {
+    setMemberForm(prev => {
+      const updated = [...prev.custom_urls];
+      updated[index] = value;
+      return { ...prev, custom_urls: updated };
+    });
+  };
+
+  const handleRemoveUrlField = (index) => {
+    setMemberForm(prev => {
+      const updated = prev.custom_urls.filter((_, i) => i !== index);
+      return { ...prev, custom_urls: updated.length > 0 ? updated : [''] };
+    });
+  };
+
+  const handleDeleteMember = async (member, e) => {
+    e?.stopPropagation();
+    if (!window.confirm(`Are you sure you want to permanently delete member "${member.name}" from the database?`)) {
+      return;
+    }
+    try {
+      await api.deleteRow('members', member.id);
+      await triggerDataRefresh(true);
+      if (selectedMember?.id === member.id) {
+        selectMember(null);
+      }
+    } catch (err) {
+      alert(`Failed to delete member: ${err.message}`);
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPhoto(true);
+    setFormError('');
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64 = reader.result.split(',')[1];
+          const res = await api.uploadImage(file.name, file.type, base64);
+          if (res && res.url) {
+            setMemberForm(prev => ({ ...prev, photograph_url: res.url }));
+          }
+        } catch (uploadErr) {
+          setFormError(uploadErr.message || 'Image upload failed');
+        } finally {
+          setUploadingPhoto(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setFormError(err.message);
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleSaveMember = async (e) => {
+    e.preventDefault();
+    if (!memberForm.name.trim() || !memberForm.role.trim()) {
+      setFormError('Member name and role are required.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFormError('');
+
+    const cleanUrls = (memberForm.custom_urls || [])
+      .map(u => String(u || '').trim())
+      .filter(Boolean);
+
+    // Auto-classify URLs
+    const structuredLinks = cleanUrls.map(url => {
+      const uLower = url.toLowerCase();
+      let label = 'Website';
+      if (uLower.includes('linkedin.com')) label = 'LinkedIn';
+      else if (uLower.includes('github.com')) label = 'GitHub';
+      else if (uLower.includes('twitter.com') || uLower.includes('x.com')) label = 'Twitter / X';
+      else if (uLower.includes('instagram.com')) label = 'Instagram';
+      else if (uLower.includes('scholar.google')) label = 'Google Scholar';
+      else if (uLower.includes('researchgate.net')) label = 'ResearchGate';
+      return { label, url };
+    });
+
+    const li = cleanUrls.find(u => u.toLowerCase().includes('linkedin.com')) || '';
+    const gh = cleanUrls.find(u => u.toLowerCase().includes('github.com')) || '';
+    const pf = cleanUrls.find(u => !u.toLowerCase().includes('linkedin.com') && !u.toLowerCase().includes('github.com')) || '';
+
+    // Guarantee persistence across all DB schemas by embedding links and display_order metadata in biography
+    const rawBio = (memberForm.biography || '').replace(/\n*<!--(?:KLEF|KLU)_LINKS:[\s\S]*?-->/g, '').trim();
+    const currentOrder = Number(memberForm.display_order) || 0;
+    const metadataPayload = {
+      links: structuredLinks,
+      display_order: currentOrder
+    };
+    const finalBio = `${rawBio}\n\n<!--KLEF_LINKS:${JSON.stringify(metadataPayload)}-->`;
+
+    const payload = {
+      name: memberForm.name.trim(),
+      role: memberForm.role.trim(),
+      category: memberForm.category || 'chapter_member',
+      photograph_url: (memberForm.photograph_url || '').trim(),
+      biography: finalBio,
+      email: (memberForm.email || '').trim(),
+      display_order: Number(memberForm.display_order) || 0,
+      is_active: Boolean(memberForm.is_active),
+      linkedin_url: li,
+      github_url: gh,
+      portfolio_url: pf,
+      social_links: structuredLinks
+    };
+
+    try {
+      if (editingMember) {
+        await api.updateRow('members', {
+          id: editingMember.id,
+          ...payload,
+        });
+      } else {
+        await api.createRow('members', payload);
+      }
+      await triggerDataRefresh(true);
+      setMemberModalOpen(false);
+    } catch (err) {
+      setFormError(err.message || 'Failed to save member record');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // MEMBER CARD RENDERER (Clean: ONLY Role & Person Name, ONLY LinkedIn on Card)
+  // ---------------------------------------------------------------------------
+  const renderMemberCard = (member, index) => {
+    // Cycle sequentially through the 27 requested card colors
+    const paletteIndex = index % CARD_PALETTES.length;
+    const palette = CARD_PALETTES[paletteIndex];
+    const hasPhoto = Boolean(member.photograph_url);
+    const parsed = parseMemberData(member);
+    const initials = getInitials(member.name);
 
     return (
-      <div 
-        key={member.id} 
-        className="card member-card" 
+      <motion.div 
+        layout
+        layoutId={`member-${member.id || index}`}
+        key={member.id || index} 
+        draggable={isVisualAdmin}
+        onDragStart={(e) => handleDragStart(e, index)}
+        onDragOver={(e) => handleDragOver(e, index)}
+        onDragLeave={(e) => handleDragLeave(e, index)}
+        onDrop={(e) => handleDrop(e, index)}
+        onDragEnd={handleDragEnd}
         style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          textAlign: 'center',
-          padding: '24px',
-          transition: 'transform var(--transition-normal), border-color var(--transition-normal)'
+          position: 'relative',
+          borderRadius: '16px',
+          border: `1.5px solid ${palette.border}`,
+          backgroundColor: '#FFFFFF',
+          boxShadow: dragOverIdx === index && draggedIdx !== index ? '0 16px 36px rgba(0, 92, 169, 0.25)' : '0 4px 18px rgba(0, 0, 0, 0.04)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          cursor: isVisualAdmin ? (draggedIdx === index ? 'grabbing' : 'grab') : 'pointer',
+          opacity: draggedIdx === index ? 0.35 : 1,
+          transform: dragOverIdx === index && draggedIdx !== index ? 'scale(1.03) translateY(-4px)' : 'none',
+          outline: dragOverIdx === index && draggedIdx !== index ? '3px dashed #005CA9' : 'none',
+          outlineOffset: '4px',
+          transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, opacity 0.2s ease',
+          height: '100%',
+        }}
+        className="member-editorial-card"
+        onClick={() => {
+          if (!isVisualAdmin || draggedIdx === null) {
+            selectMember(member);
+          }
+        }}
+        onMouseEnter={(e) => {
+          if (!isVisualAdmin) {
+            e.currentTarget.style.transform = 'translateY(-6px)';
+            e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 92, 169, 0.12)';
+            e.currentTarget.style.borderColor = palette.accent;
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isVisualAdmin) {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 18px rgba(0, 0, 0, 0.04)';
+            e.currentTarget.style.borderColor = palette.border;
+          }
         }}
       >
-        {/* Photo Container */}
-        {hasPhoto ? (
-          <img
-            src={member.photograph_url}
-            alt={member.name}
-            style={{
-              width: '120px',
-              height: '120px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '2px solid var(--border)',
-              marginBottom: '16px',
-              backgroundColor: 'var(--bg-main)',
-              transition: 'transform var(--transition-normal)'
-            }}
-            className="member-avatar"
-          />
-        ) : (
-          <div
-            style={{
-              width: '120px',
-              height: '120px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--primary-light)',
-              color: 'var(--primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.8rem',
-              fontWeight: '700',
-              border: '2px solid rgba(0, 92, 169, 0.15)',
-              marginBottom: '16px',
-              fontFamily: 'var(--font-heading)',
-              transition: 'transform var(--transition-normal)'
-            }}
-            className="member-avatar"
-          >
-            {getInitials(member.name)}
-          </div>
-        )}
+        {/* Top Pastel Header Area with Centered Profile Photo (Clicking opens person page) */}
+        <div 
+          style={{ 
+            position: 'relative',
+            height: '190px',
+            background: palette.bg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            borderBottom: `1px solid ${palette.border}`
+          }}
+        >
+          {/* Member Photograph */}
+          {hasPhoto ? (
+            <div 
+              style={{ 
+                position: 'relative',
+                zIndex: 2,
+                width: '124px', 
+                height: '124px', 
+                borderRadius: '16px', 
+                overflow: 'hidden', 
+                border: '3px solid #FFFFFF', 
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.10)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'transform 0.2s ease',
+              }}
+              title={`View ${member.name}'s Profile`}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <SafeImage
+                src={member.photograph_url}
+                alt={member.name}
+                fallbackIcon={User}
+                fallbackText={member.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+          ) : (
+            <div 
+              style={{
+                position: 'relative',
+                zIndex: 2,
+                width: '100px',
+                height: '100px',
+                borderRadius: '16px',
+                backgroundColor: '#FFFFFF',
+                border: `2px solid ${palette.accent}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 6px 18px rgba(0, 0, 0, 0.06)'
+              }}
+            >
+              <span style={{ fontSize: '2.2rem', fontWeight: '900', color: palette.accent, letterSpacing: '-0.02em' }}>
+                {initials}
+              </span>
+            </div>
+          )}
+        </div>
 
-        {/* Details */}
-        <h3 style={{ fontSize: '1.15rem', color: 'var(--secondary)', fontWeight: '700', margin: 0 }}>
-          {member.name}
-        </h3>
-        
-        <div style={{ position: 'relative', overflow: 'hidden', width: '100%', minHeight: '50px', marginTop: '6px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {/* Role (Centered initially, slides up on hover) */}
-          <div 
-            className="member-role" 
-            style={{ 
-              fontSize: '0.8rem', 
-              fontWeight: '600', 
-              color: 'var(--primary)', 
-              textTransform: 'uppercase', 
-              letterSpacing: '0.04em',
-              transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
-              position: 'absolute',
-              top: '8px'
-            }}
-          >
-            {member.role}
+        {/* Card Body Information - CLEAN: ONLY ROLE & PERSON NAME */}
+        <div style={{ padding: '20px 22px 18px 22px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            {/* Role / Title Kicker */}
+            <div 
+              style={{ 
+                fontSize: '0.72rem', 
+                fontWeight: '800', 
+                color: palette.accent, 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.08em', 
+                marginBottom: '8px',
+                display: 'inline-block',
+                backgroundColor: palette.badgeBg,
+                padding: '3px 10px',
+                borderRadius: '4px'
+              }}
+            >
+              {member.role}
+            </div>
+
+            {/* Member Full Name */}
+            <h3 
+              style={{ 
+                fontSize: '1.22rem', 
+                fontWeight: '800', 
+                color: 'var(--navy-900)', 
+                margin: '0 0 4px 0', 
+                letterSpacing: '-0.02em',
+                lineHeight: '1.25'
+              }}
+            >
+              {member.name}
+            </h3>
           </div>
 
-          {/* Socials & Bio Actions (Fades & slides up on hover) */}
+          {/* Bottom Card Strip - ONLY LinkedIn Icon on the Directory Card */}
           <div 
-            className="member-socials-reveal" 
             style={{ 
               display: 'flex', 
-              gap: '14px', 
-              alignItems: 'center',
-              transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease',
-              opacity: 0,
-              transform: 'translateY(24px)',
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              paddingTop: '14px',
+              borderTop: '1px solid var(--border-subtle)',
+              marginTop: '16px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              {parsed.linkedinUrl ? (
+                <a
+                  href={parsed.linkedinUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="LinkedIn Profile"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '6px',
+                    backgroundColor: 'var(--slate-50)',
+                    border: '1px solid var(--border-light)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#0A66C2',
+                    textDecoration: 'none',
+                    transition: 'all 0.18s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#0A66C2';
+                    e.currentTarget.style.color = '#FFFFFF';
+                    e.currentTarget.style.borderColor = '#0A66C2';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--slate-50)';
+                    e.currentTarget.style.color = '#0A66C2';
+                    e.currentTarget.style.borderColor = 'var(--border-light)';
+                    e.currentTarget.style.transform = 'none';
+                  }}
+                >
+                  <LinkedInIcon size={15} />
+                </a>
+              ) : (
+                <span style={{ fontSize: '0.74rem', color: 'var(--slate-400)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  KLEF ACM
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => selectMember(member)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: palette.accent,
+                fontSize: '0.8rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 6px'
+              }}
+            >
+              <span>Profile</span>
+              <span style={{ fontSize: '1rem', lineHeight: '1' }}>→</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Admin Quick Actions & Reordering Controls */}
+        {isVisualAdmin && (
+          <div 
+            style={{
               position: 'absolute',
-              top: '8px'
+              top: '10px',
+              left: '10px',
+              right: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              zIndex: 10,
+              pointerEvents: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Reorder Grip & Arrows */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'rgba(15, 23, 42, 0.92)', padding: '4px 6px', borderRadius: '8px', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.18)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+              <div 
+                title="Drag to reposition card"
+                style={{ 
+                  cursor: 'grab', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '3px', 
+                  color: '#94A3B8',
+                  padding: '2px 4px',
+                  userSelect: 'none'
+                }}
+              >
+                <GripVertical size={14} color="#CBD5E1" />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#F8FAFC' }}>#{index + 1}</span>
+              </div>
+
+              <button
+                type="button"
+                disabled={index === 0}
+                title="Move Card Earlier"
+                onClick={(e) => handleMoveMember(index, -1, e)}
+                style={{
+                  padding: '4px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: index === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.12)',
+                  color: index === 0 ? 'rgba(255,255,255,0.25)' : '#FFFFFF',
+                  border: 'none',
+                  cursor: index === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'background-color 0.15s'
+                }}
+              >
+                <MoveUp size={13} />
+              </button>
+
+              <button
+                type="button"
+                disabled={index === members.length - 1}
+                title="Move Card Later"
+                onClick={(e) => handleMoveMember(index, 1, e)}
+                style={{
+                  padding: '4px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: index === members.length - 1 ? 'transparent' : 'rgba(255, 255, 255, 0.12)',
+                  color: index === members.length - 1 ? 'rgba(255,255,255,0.25)' : '#FFFFFF',
+                  border: 'none',
+                  cursor: index === members.length - 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'background-color 0.15s'
+                }}
+              >
+                <MoveDown size={13} />
+              </button>
+            </div>
+
+            {/* Edit & Delete Action Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                type="button"
+                title="Edit Member"
+                onClick={(e) => handleOpenEditMember(member, e)}
+                style={{
+                  padding: '6px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: '#0F172A',
+                  color: '#38BDF8',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                }}
+              >
+                <Edit3 size={13} />
+              </button>
+              <button
+                type="button"
+                title="Delete Member"
+                onClick={(e) => handleDeleteMember(member, e)}
+                style={{
+                  padding: '6px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                }}
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          </div>
+        )}
+      </motion.div>
+    );
+  };
+
+  // ---------------------------------------------------------------------------
+  // DEDICATED FULL MEMBER PROFILE VIEW (Shows ALL links in Bio Page, Centered Zoomable Photo)
+  // ---------------------------------------------------------------------------
+  const renderDedicatedProfileView = () => {
+    if (!selectedMember) return null;
+    const parsed = parseMemberData(selectedMember);
+    const initials = getInitials(selectedMember.name);
+    const memberIndex = members.findIndex(m => m.id === selectedMember.id || (m.name && selectedMember.name && m.name.toLowerCase() === selectedMember.name.toLowerCase()));
+    const paletteIndex = memberIndex >= 0 ? memberIndex % CARD_PALETTES.length : 0;
+    const palette = CARD_PALETTES[paletteIndex];
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 16 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          maxWidth: '920px',
+          margin: '0 auto',
+          padding: '16px 0 64px 0'
+        }}
+      >
+        {/* Navigation Back Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
+          <button
+            type="button"
+            onClick={() => selectMember(null)}
+            className="btn btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              fontWeight: '700',
+              fontSize: '0.9rem'
             }}
           >
-            {member.linkedin_url && (
-              <a 
-                href={member.linkedin_url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                style={{ color: 'var(--text-muted)', transition: 'color var(--transition-fast)' }}
-                className="social-icon"
-                aria-label="LinkedIn"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                </svg>
-              </a>
-            )}
-            {member.email && (
-              <a 
-                href={`mailto:${member.email}`} 
-                style={{ color: 'var(--text-muted)', transition: 'color var(--transition-fast)' }}
-                className="social-icon"
-                aria-label="Email"
-              >
-                <Mail size={16} />
-              </a>
-            )}
-            {member.biography && member.biography.trim() !== '' && (
+            <ArrowLeft size={16} />
+            <span>Back to Members Directory</span>
+          </button>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => handleCopyProfileLink(selectedMember)}
+              className="btn btn-secondary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 18px',
+                borderRadius: '6px',
+                fontSize: '0.86rem',
+                fontWeight: '600'
+              }}
+            >
+              {copiedLink ? <Check size={16} color="#16A34A" /> : <Share2 size={16} />}
+              <span>{copiedLink ? 'Link Copied!' : 'Share Profile'}</span>
+            </button>
+
+            {isVisualAdmin && (
               <button
-                onClick={() => setSelectedMember(member)}
+                type="button"
+                onClick={(e) => handleOpenEditMember(selectedMember, e)}
+                className="btn btn-primary"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  transition: 'color 0.2s'
+                  gap: '8px',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '0.86rem',
+                  fontWeight: '700'
                 }}
-                className="bio-btn"
-                title="Read Biography"
               >
-                <Info size={16} />
+                <Edit3 size={15} />
+                <span>Edit Profile</span>
               </button>
             )}
           </div>
         </div>
-      </div>
+
+        {/* Profile Card Main Container */}
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '20px',
+            border: `1.5px solid ${palette.border}`,
+            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.06)',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Header Banner */}
+          <div
+            style={{
+              height: '140px',
+              background: palette.bg,
+              borderBottom: `1px solid ${palette.border}`,
+              position: 'relative'
+            }}
+          />
+
+          {/* Profile Overview Container - FULLY CENTERED */}
+          <div style={{ padding: '0 36px 36px 36px', textAlign: 'center' }}>
+            
+            {/* Centered Large Profile Photograph (Click to Zoom Lightbox) */}
+            <div
+              style={{
+                width: '160px',
+                height: '160px',
+                borderRadius: '24px',
+                overflow: 'hidden',
+                border: '4px solid #FFFFFF',
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 12px 36px rgba(0, 0, 0, 0.14)',
+                margin: '-80px auto 20px auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                cursor: selectedMember.photograph_url ? 'zoom-in' : 'default',
+                transition: 'transform 0.25s ease'
+              }}
+              title={selectedMember.photograph_url ? "Click to expand photo" : selectedMember.name}
+              onClick={() => {
+                if (selectedMember.photograph_url) {
+                  setZoomedImage({
+                    url: selectedMember.photograph_url,
+                    name: selectedMember.name,
+                    role: selectedMember.role
+                  });
+                }
+              }}
+              onMouseEnter={(e) => {
+                if (selectedMember.photograph_url) e.currentTarget.style.transform = 'scale(1.04)';
+              }}
+              onMouseLeave={(e) => {
+                if (selectedMember.photograph_url) e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              {selectedMember.photograph_url ? (
+                <>
+                  <SafeImage
+                    src={selectedMember.photograph_url}
+                    alt={selectedMember.name}
+                    fallbackIcon={User}
+                    fallbackText={selectedMember.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '6px',
+                      right: '6px',
+                      backgroundColor: 'rgba(0,0,0,0.65)',
+                      borderRadius: '50%',
+                      width: '26px',
+                      height: '26px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#FFFFFF'
+                    }}
+                  >
+                    <Maximize2 size={13} />
+                  </div>
+                </>
+              ) : (
+                <span style={{ fontSize: '3.4rem', fontWeight: '900', color: palette.accent }}>
+                  {initials}
+                </span>
+              )}
+            </div>
+
+            {/* Role Badge - Centered */}
+            <div
+              style={{
+                display: 'inline-block',
+                padding: '5px 14px',
+                borderRadius: '6px',
+                backgroundColor: palette.badgeBg,
+                color: palette.badgeColor,
+                fontSize: '0.82rem',
+                fontWeight: '800',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                marginBottom: '10px'
+              }}
+            >
+              {selectedMember.role}
+            </div>
+
+            {/* Member Name - Centered */}
+            <h1
+              style={{
+                fontSize: 'clamp(26px, 4vw, 36px)',
+                fontWeight: '900',
+                color: 'var(--navy-900)',
+                margin: '0 0 6px 0',
+                letterSpacing: '-0.025em',
+                lineHeight: '1.2'
+              }}
+            >
+              {selectedMember.name}
+            </h1>
+
+            <p style={{ color: 'var(--slate-500)', fontSize: '0.92rem', margin: '0 0 24px 0', fontWeight: '500' }}>
+              KLEF ACM Student Chapter • KL Deemed to be University
+            </p>
+
+            {/* Social Connect Strip in Member Bio View - Shows ALL Custom Links */}
+            {parsed.links.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  backgroundColor: 'var(--slate-50)',
+                  border: '1px solid var(--border-light)',
+                  marginBottom: '28px',
+                  maxWidth: '560px',
+                  margin: '0 auto 28px auto'
+                }}
+              >
+                {parsed.links.map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <a
+                      key={idx}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        fontWeight: '700',
+                        fontSize: '0.86rem',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid var(--border-light)',
+                        color: item.color,
+                        textDecoration: 'none',
+                        transition: 'all 0.18s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = item.color;
+                        e.currentTarget.style.color = '#FFFFFF';
+                        e.currentTarget.style.borderColor = item.color;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FFFFFF';
+                        e.currentTarget.style.color = item.color;
+                        e.currentTarget.style.borderColor = 'var(--border-light)';
+                      }}
+                    >
+                      <Icon size={16} />
+                      <span>{item.label}</span>
+                      <ExternalLink size={12} style={{ opacity: 0.7 }} />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Full Biography Section */}
+            <div style={{ marginTop: '16px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                <BookOpen size={18} color="var(--primary)" />
+                <h2 style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--navy-900)', margin: 0 }}>
+                  Profile Biography & Leadership Overview
+                </h2>
+              </div>
+
+              {parsed.bio ? (
+                <div
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-light)',
+                    padding: '28px 32px',
+                    color: 'var(--slate-700)',
+                    fontSize: '1.02rem',
+                    lineHeight: '1.85',
+                    whiteSpace: 'pre-wrap',
+                    boxShadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.02)'
+                  }}
+                  className="profile-biography-box"
+                >
+                  {parsed.bio}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: '32px',
+                    textAlign: 'center',
+                    borderRadius: '12px',
+                    backgroundColor: 'var(--slate-50)',
+                    border: '1px dashed var(--border-light)',
+                    color: 'var(--slate-500)',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  No detailed biography currently published for this chapter member.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </motion.div>
     );
   };
 
   return (
-    <div style={{ backgroundColor: '#ffffff', minHeight: '80vh', paddingBottom: '80px' }}>
+    <div style={{ backgroundColor: '#FCFCFD', minHeight: '80vh', paddingBottom: '88px' }}>
       {/* Editorial Header */}
-      <section style={{ backgroundColor: 'var(--bg-main)', padding: '64px 0', borderBottom: '1px solid var(--border)' }}>
-        <div className="container">
-          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>
-            Chapter Officers
-          </span>
-          <h1 style={{ fontSize: '2.4rem', fontWeight: '800', color: 'var(--secondary)', letterSpacing: '-0.02em', marginBottom: '16px' }}>
-            <TextReveal text="Our Chapter Committee" duration={900} />
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.6', maxWidth: '600px', margin: 0 }}>
-            Meet the faculty coordinators and student administrators executing the vision of the KLU ACM Student Chapter.
-          </p>
-        </div>
-      </section>
-
-      {/* 1. Faculty Coordinators Section */}
-      {faculty.length > 0 && (
-        <ScrollReveal delay={0} duration={700}>
-          <div className="container" style={{ marginTop: '50px' }}>
-            <h2 style={{ fontSize: '1.6rem', borderBottom: '2px solid var(--border)', paddingBottom: '8px', marginBottom: '24px' }}>
-              Faculty Coordinators
-            </h2>
-            <div className="grid-3" style={{ justifyContent: 'center' }}>
-              {faculty.map(renderMemberCard)}
-            </div>
-          </div>
-        </ScrollReveal>
-      )}
-
-      {/* 2. Executive Council Section */}
-      {executiveCouncil.length > 0 && (
-        <ScrollReveal delay={100} duration={750}>
-          <div className="container" style={{ marginTop: '50px' }}>
-            <h2 style={{ fontSize: '1.6rem', borderBottom: '2px solid var(--border)', paddingBottom: '8px', marginBottom: '24px' }}>
-              Executive Council
-            </h2>
-            <div className="grid-3">
-              {executiveCouncil.map(renderMemberCard)}
-            </div>
-          </div>
-        </ScrollReveal>
-      )}
-
-      {/* 3. Technical & Design Committee Leads */}
-      {leads.length > 0 && (
-        <ScrollReveal delay={150} duration={800}>
-          <div className="container" style={{ marginTop: '50px' }}>
-            <h2 style={{ fontSize: '1.6rem', borderBottom: '2px solid var(--border)', paddingBottom: '8px', marginBottom: '24px' }}>
-              Technical & Editorial Leads
-            </h2>
-            <div className="grid-4">
-              {leads.map(renderMemberCard)}
-            </div>
-          </div>
-        </ScrollReveal>
-      )}
-
-      {/* 4. Student Members */}
-      {studentMembers.length > 0 && (
-        <ScrollReveal delay={200} duration={850}>
-          <div className="container" style={{ marginTop: '50px' }}>
-            <h2 style={{ fontSize: '1.6rem', borderBottom: '2px solid var(--border)', paddingBottom: '8px', marginBottom: '24px' }}>
-              Student Members
-            </h2>
-            <div 
-              style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
-                gap: '20px' 
-              }}
-            >
-              {studentMembers.map(renderMemberCard)}
-            </div>
-          </div>
-        </ScrollReveal>
-      )}
-
-      {/* Show empty state if no active members at all */}
-      {members.length === 0 && (
-        <div className="container text-center" style={{ marginTop: '80px' }}>
-          <div className="card" style={{ padding: '60px 20px', maxWidth: '600px', margin: '0 auto' }}>
-            <User size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 16px auto', opacity: 0.6 }} />
-            <h3 style={{ marginBottom: '8px' }}>Team Roster Empty</h3>
-            <p style={{ color: 'var(--text-muted)' }}>The chapter members list is currently being compiled by the administrator.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Biography Modal */}
-      {selectedMember && (
-        <div className="modal-overlay" onClick={() => setSelectedMember(null)} style={{ animation: 'modalFadeIn 0.25s ease-out forwards' }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ animation: 'modalScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
-            <button className="modal-close" onClick={() => setSelectedMember(null)}>
-              <X size={24} />
-            </button>
-
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
-              {selectedMember.photograph_url ? (
-                <img
-                  src={selectedMember.photograph_url}
-                  alt={selectedMember.name}
-                  style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }}
+      {!selectedMember && (
+        <section style={{ backgroundColor: '#FFFFFF', padding: '72px 0', borderBottom: '1px solid var(--border-light)' }}>
+          <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px' }}>
+              <div style={{ maxWidth: '740px' }}>
+                <VisualEditable
+                  name="members_tag"
+                  as="span"
+                  defaultValue="EXECUTIVE LEADERSHIP"
+                  className="editorial-kicker"
                 />
-              ) : (
-                <div
+                <VisualEditable
+                  name="members_title"
+                  as="h1"
+                  defaultValue="Chapter Committee & Leadership"
                   style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--primary-light)',
-                    color: 'var(--primary)',
-                    display: 'flex',
+                    fontSize: 'clamp(28px, 4vw, 40px)',
+                    fontWeight: '800',
+                    color: 'var(--navy-900)',
+                    letterSpacing: '-0.025em',
+                    marginBottom: '12px',
+                    lineHeight: '1.2',
+                  }}
+                />
+                <VisualEditable
+                  name="members_subtitle"
+                  as="p"
+                  defaultValue="Faculty Mentors, Student Executive Officers, and Technical Division Leads guiding KLEF ACM."
+                  style={{
+                    color: 'var(--slate-600)',
+                    fontSize: '1.05rem',
+                    lineHeight: '1.65',
+                    margin: 0,
+                  }}
+                />
+              </div>
+
+              {/* Admin Add Member Button */}
+              {isVisualAdmin && (
+                <button
+                  type="button"
+                  onClick={handleOpenAddMember}
+                  className="btn btn-primary"
+                  style={{
+                    borderRadius: '4px',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.4rem',
-                    fontWeight: '700'
+                    gap: '8px'
                   }}
                 >
-                  {getInitials(selectedMember.name)}
+                  <Plus size={18} />
+                  <span>Add Member</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Main Content Layout */}
+      <div className="container" style={{ marginTop: selectedMember ? '32px' : '48px', display: 'flex', flexDirection: 'column', gap: '48px' }}>
+        
+        {/* If a member is selected, show dedicated profile layout; otherwise show directory grid */}
+        <AnimatePresence mode="wait">
+          {selectedMember ? (
+            renderDedicatedProfileView()
+          ) : siteDataLoading && members.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '72px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <Loader2 size={36} className="animate-spin" color="#005CA9" style={{ marginBottom: '16px' }} />
+              <p style={{ color: 'var(--slate-500)', fontSize: '0.94rem', fontWeight: '600' }}>Loading chapter leadership roster from database...</p>
+            </div>
+          ) : members.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '64px 20px', border: '1px dashed var(--slate-300)', borderRadius: '12px', backgroundColor: '#FFFFFF' }}>
+              <User size={44} style={{ color: 'var(--slate-400)', margin: '0 auto 16px auto' }} />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--navy-900)', marginBottom: '8px' }}>No Members Added Yet</h3>
+              <p style={{ color: 'var(--slate-600)', fontSize: '0.95rem' }}>Chapter leadership and members will appear here.</p>
+              {isVisualAdmin && (
+                <button
+                  type="button"
+                  onClick={handleOpenAddMember}
+                  className="btn btn-primary"
+                  style={{ marginTop: '16px', borderRadius: '4px' }}
+                >
+                  <Plus size={16} /> Add First Member
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {isVisualAdmin && members.length > 0 && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 18px', borderRadius: '24px', backgroundColor: '#F0F9FF', border: '1.5px solid #BAE6FD', color: '#0369A1', fontSize: '0.86rem', fontWeight: '700', alignSelf: 'flex-start' }}>
+                  <GripVertical size={16} />
+                  <span>✨ Drag & Drop any card to reposition in real-time, or use the arrow buttons!</span>
                 </div>
               )}
-              <div>
-                <h2 style={{ fontSize: '1.4rem', color: 'var(--secondary)' }}>{selectedMember.name}</h2>
-                <p style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--primary)', textTransform: 'uppercase' }}>
-                  {selectedMember.role}
-                </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '32px' }}>
+                {members.map((member, idx) => (
+                  isVisualAdmin ? (
+                    renderMemberCard(member, idx)
+                  ) : (
+                    <ScrollReveal key={member.id || idx} delay={idx * 30} duration={500} yOffset={16}>
+                      {renderMemberCard(member, idx)}
+                    </ScrollReveal>
+                  )
+                ))}
               </div>
-            </div>
+            </>
+          )}
+        </AnimatePresence>
 
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-              <span style={{ fontWeight: '600', fontSize: '0.85rem', color: 'var(--secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
-                Biography
+        {/* Free-form Page Blocks */}
+        {!selectedMember && (
+          <PageBlockList blockKey="members_blocks" style={{ marginTop: '32px' }} />
+        )}
+      </div>
+
+      {/* High-Res Image Lightbox Popup Modal - Rendered directly to document.body so it overlays global header and all nav links */}
+      {zoomedImage && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 2147483647,
+            backgroundColor: 'rgba(5, 10, 20, 0.95)',
+            backdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+          }}
+          onClick={() => setZoomedImage(null)}
+        >
+          {/* Viewport Fixed Top-Right Close Button (Always visible on all screens/zooms) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoomedImage(null);
+            }}
+            style={{
+              position: 'fixed',
+              top: '20px',
+              right: '24px',
+              zIndex: 2147483647,
+              background: 'rgba(255, 255, 255, 0.22)',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
+              borderRadius: '50%',
+              width: '46px',
+              height: '46px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(8px)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
+              e.currentTarget.style.transform = 'scale(1.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.22)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            title="Close (Esc)"
+          >
+            <X size={26} />
+          </button>
+
+          {/* Centered Lightbox Card */}
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: 'min(90vw, 480px)',
+              maxHeight: 'min(86vh, 700px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#0F172A',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '20px',
+              padding: '16px',
+              boxShadow: '0 30px 70px rgba(0, 0, 0, 0.8)',
+              boxSizing: 'border-box',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={zoomedImage.url}
+              alt={zoomedImage.name}
+              style={{
+                maxHeight: 'min(62vh, 480px)',
+                maxWidth: '100%',
+                width: 'auto',
+                height: 'auto',
+                borderRadius: '12px',
+                objectFit: 'contain',
+                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.5)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'block',
+              }}
+            />
+
+            {/* Caption */}
+            <div style={{ marginTop: '12px', textAlign: 'center', width: '100%' }}>
+              <h4 style={{ color: '#FFFFFF', fontSize: '1.15rem', fontWeight: '800', margin: '0 0 2px 0' }}>
+                {zoomedImage.name}
+              </h4>
+              <span style={{ color: '#38BDF8', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                {zoomedImage.role}
               </span>
-              <p style={{ color: 'var(--text-main)', fontSize: '0.95rem', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
-                {selectedMember.biography}
-              </p>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-              <button onClick={() => setSelectedMember(null)} className="btn btn-secondary btn-sm">
-                Close
+      {/* Admin Visual In-Place Member Form Modal with Clean Single URL Fields */}
+      {memberModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 96000,
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+          }}
+          onClick={() => setMemberModalOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '620px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '32px',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#0f172a', margin: 0 }}>
+                {editingMember ? 'Edit Member Profile' : 'Add Chapter Member'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setMemberModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={22} />
               </button>
             </div>
+
+            {formError && (
+              <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', color: '#dc2626', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '18px', fontWeight: '600' }}>
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveMember} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Dr. B. Tirapathi Reddy / Annie Maloji Spandana"
+                  value={memberForm.name}
+                  onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.92rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+                  Role / Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Faculty Chairperson / Chair / Web Master"
+                  value={memberForm.role}
+                  onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                />
+              </div>
+
+              {/* Photo Upload */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+                  Member Photograph
+                </label>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="Direct Photo URL or upload below"
+                    value={memberForm.photograph_url}
+                    onChange={(e) => setMemberForm({ ...memberForm, photograph_url: e.target.value })}
+                    style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                  />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handlePhotoUpload}
+                  />
+                  <button
+                    type="button"
+                    disabled={uploadingPhoto}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      fontWeight: '700',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    {uploadingPhoto ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                    <span>Upload</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  placeholder="e.g. member@kluniversity.in"
+                  value={memberForm.email}
+                  onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '800', color: '#0f172a', marginBottom: '6px' }}>
+                  Biography / Leadership Summary
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder="Detailed biography, tech stack, research focus, achievements..."
+                  value={memberForm.biography}
+                  onChange={(e) => setMemberForm({ ...memberForm, biography: e.target.value })}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', resize: 'vertical' }}
+                />
+              </div>
+
+              {/* Clean Single URL Field Dynamic List (User only pastes URL!) */}
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', backgroundColor: '#f8fafc' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: '800', color: '#0f172a' }}>
+                      Profile Links & Social URLs
+                    </label>
+                    <span style={{ fontSize: '0.76rem', color: '#64748b' }}>
+                      Add LinkedIn, GitHub, Portfolio, or any custom URL (shown on member bio page)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddUrlField}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: '#005CA9',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontSize: '0.8rem',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Plus size={14} /> Add URL
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(memberForm.custom_urls || []).map((urlValue, idx) => {
+                    const uLower = (urlValue || '').toLowerCase();
+                    let badgeLabel = 'URL';
+                    let badgeColor = '#64748b';
+                    if (uLower.includes('linkedin.com')) { badgeLabel = 'LinkedIn'; badgeColor = '#0A66C2'; }
+                    else if (uLower.includes('github.com')) { badgeLabel = 'GitHub'; badgeColor = '#24292F'; }
+                    else if (uLower.includes('leetcode.com') || uLower.includes('leetcode.cn')) { badgeLabel = 'LeetCode'; badgeColor = '#FFA116'; }
+                    else if (uLower.includes('hackerrank.com')) { badgeLabel = 'HackerRank'; badgeColor = '#2EC866'; }
+                    else if (uLower.includes('codechef.com')) { badgeLabel = 'CodeChef'; badgeColor = '#5B4638'; }
+                    else if (uLower.includes('codeforces.com')) { badgeLabel = 'Codeforces'; badgeColor = '#1F8ACB'; }
+                    else if (uLower.includes('geeksforgeeks.org')) { badgeLabel = 'GFG'; badgeColor = '#2F8D46'; }
+                    else if (uLower.includes('kaggle.com')) { badgeLabel = 'Kaggle'; badgeColor = '#20BEFF'; }
+                    else if (uLower.includes('gitlab.com')) { badgeLabel = 'GitLab'; badgeColor = '#FC6D26'; }
+                    else if (uLower.includes('twitter.com') || uLower.includes('x.com')) { badgeLabel = 'Twitter/X'; badgeColor = '#0F1419'; }
+                    else if (uLower.includes('instagram.com')) { badgeLabel = 'Instagram'; badgeColor = '#E1306C'; }
+                    else if (uLower.includes('youtube.com') || uLower.includes('youtu.be')) { badgeLabel = 'YouTube'; badgeColor = '#FF0000'; }
+                    else if (uLower.includes('medium.com')) { badgeLabel = 'Medium'; badgeColor = '#12100E'; }
+                    else if (uLower.includes('scholar.google')) { badgeLabel = 'Scholar'; badgeColor = '#4285F4'; }
+                    else if (uLower.includes('researchgate.net')) { badgeLabel = 'Research'; badgeColor = '#00CCBB'; }
+                    else if (urlValue.trim()) { badgeLabel = 'Portfolio'; badgeColor = '#005CA9'; }
+
+
+                    return (
+                      <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span 
+                          style={{ 
+                            fontSize: '0.72rem', 
+                            fontWeight: '800', 
+                            color: badgeColor, 
+                            backgroundColor: '#ffffff', 
+                            border: '1px solid #cbd5e1', 
+                            borderRadius: '4px', 
+                            padding: '6px 8px', 
+                            minWidth: '70px', 
+                            textAlign: 'center' 
+                          }}
+                        >
+                          {badgeLabel}
+                        </span>
+                        <input
+                          type="url"
+                          placeholder="Paste URL (e.g. https://github.com/... or https://linkedin.com/...)"
+                          value={urlValue}
+                          onChange={(e) => handleUpdateUrlField(idx, e.target.value)}
+                          style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '0.86rem',
+                            backgroundColor: '#ffffff'
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveUrlField(idx)}
+                          style={{
+                            padding: '8px',
+                            borderRadius: '6px',
+                            border: '1px solid #fecdd3',
+                            backgroundColor: '#fff1f2',
+                            color: '#e11d48',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          title="Remove URL"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setMemberModalOpen(false)}
+                  style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontWeight: '700' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn btn-primary"
+                  style={{ padding: '10px 24px', fontWeight: '800', backgroundColor: '#005CA9', borderColor: '#005CA9' }}
+                >
+                  {isSubmitting ? 'Saving...' : editingMember ? 'Save Changes' : 'Add Member'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
-
-      {/* Embedded social icons and bio buttons hover effects */}
-      <style>{`
-        @keyframes modalFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes modalScaleIn {
-          from { transform: scale(0.96); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-
-        .member-card:hover {
-          border-color: var(--primary) !important;
-        }
-        
-        .member-card:hover .member-avatar {
-          transform: scale(1.04);
-        }
-
-        .member-card:hover .member-role {
-          transform: translateY(-10px);
-        }
-
-        .member-card:hover .member-socials-reveal {
-          transform: translateY(12px);
-          opacity: 1;
-        }
-
-        .social-icon:hover {
-          color: var(--primary) !important;
-        }
-        .bio-btn:hover {
-          color: var(--primary) !important;
-        }
-      `}</style>
     </div>
   );
 }

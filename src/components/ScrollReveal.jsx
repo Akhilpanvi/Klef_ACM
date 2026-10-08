@@ -16,24 +16,46 @@ export function ScrollReveal({
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setIsVisible(true);
-        observer.unobserve(entry.target);
-      }
-    }, {
-      threshold: 0.05,
-      rootMargin: '0px 0px -50px 0px'
-    });
+    const el = ref.current;
+    if (!el) return;
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
+    let observerRef = null;
+    let timeoutId = null;
+
+    const reveal = () => {
+      setIsVisible(true);
+      if (observerRef) {
+        observerRef.disconnect();
+        observerRef = null;
+      }
+    };
+
+    // Defer the check by one event loop tick so it runs after parent
+    // PublicLayout's useEffect fires window.scrollTo(0, 0)
+    timeoutId = setTimeout(() => {
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        reveal();
+        return;
+      }
+
+      // Element is below fold — use IntersectionObserver to reveal on scroll
+      observerRef = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+          reveal();
+        }
+      }, {
+        threshold: 0.05,
+        rootMargin: '0px 0px 0px 0px'
+      });
+
+      observerRef.observe(el);
+    }, 0);
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
+      clearTimeout(timeoutId);
+      if (observerRef) observerRef.disconnect();
     };
   }, []);
 
@@ -85,23 +107,33 @@ export function TextReveal({ text, delay = 0, duration = 800, style = {} }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setIsVisible(true);
-        observer.unobserve(entry.target);
-      }
-    }, {
-      threshold: 0.1
-    });
+    const el = ref.current;
+    if (!el) return;
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
+    let observerRef = null;
+    let timeoutId = null;
+
+    const reveal = () => {
+      setIsVisible(true);
+      if (observerRef) { observerRef.disconnect(); observerRef = null; }
+    };
+
+    timeoutId = setTimeout(() => {
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        reveal();
+        return;
+      }
+      observerRef = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) reveal();
+      }, { threshold: 0.1 });
+      observerRef.observe(el);
+    }, 0);
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
+      clearTimeout(timeoutId);
+      if (observerRef) observerRef.disconnect();
     };
   }, []);
 
@@ -378,14 +410,34 @@ export function SplitText({ line1, line2, delay = 0 }) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setIsVisible(true);
-        observer.unobserve(entry.target);
+    const el = ref.current;
+    if (!el) return;
+
+    let observerRef = null;
+    let timeoutId = null;
+
+    const reveal = () => {
+      setIsVisible(true);
+      if (observerRef) { observerRef.disconnect(); observerRef = null; }
+    };
+
+    timeoutId = setTimeout(() => {
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        reveal();
+        return;
       }
-    }, { threshold: 0.1 });
-    if (ref.current) observer.observe(ref.current);
-    return () => { if (ref.current) observer.unobserve(ref.current); };
+      observerRef = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) reveal();
+      }, { threshold: 0.1 });
+      observerRef.observe(el);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (observerRef) observerRef.disconnect();
+    };
   }, []);
 
   const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

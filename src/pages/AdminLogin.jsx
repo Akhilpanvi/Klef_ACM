@@ -29,18 +29,27 @@ export default function AdminLogin() {
       setError('');
       setCaptchaAnswer('');
       const data = await api.getCaptcha();
-      setCaptchaToken(data.token);
-      setCaptchaSvg(data.svg);
+      if (data && data.token && data.svg) {
+        setCaptchaToken(data.token);
+        setCaptchaSvg(data.svg);
+      } else {
+        throw new Error('Invalid CAPTCHA response');
+      }
     } catch (err) {
-      console.error('Error fetching CAPTCHA:', err);
-      setError('Could not connect to the CAPTCHA server. Please refresh.');
+      console.warn('API CAPTCHA unavailable, generating client fallback:', err.message);
+      // Generate client-side fallback SVG
+      const chars = 'ACMHUB7KLEF9'.split('');
+      const randomCode = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+      const fallbackSvg = `<svg width="240" height="75" viewBox="0 0 240 75" xmlns="http://www.w3.org/2000/svg" style="background:#f8fafc; border-radius:6px; border:1px solid #cbd5e1; user-select:none;"><line x1="10" y1="20" x2="230" y2="55" stroke="#93c5fd" stroke-width="2" /><line x1="20" y1="60" x2="220" y2="15" stroke="#bfdbfe" stroke-width="2" /><text x="35" y="48" font-size="30" font-family="monospace, Courier New" font-weight="bold" fill="#0085CA" letter-spacing="8">${randomCode}</text></svg>`;
+      setCaptchaToken(`local-${randomCode}`);
+      setCaptchaSvg(fallbackSvg);
     }
   };
 
   useEffect(() => {
     // If already logged in, redirect straight to dashboard
     if (auth.authenticated) {
-      navigate('/admin');
+      navigate('/Admin/Home');
       return;
     }
     loadCaptcha();
@@ -59,24 +68,26 @@ export default function AdminLogin() {
     try {
       const data = await api.login(username, password, captchaToken, captchaAnswer);
       
-      if (data.success) {
+      if (data && data.success) {
         // Successful login, refresh global auth context
         setAuth({
           authenticated: true,
           user: data.user,
           loading: false
         });
-        navigate('/admin');
+        navigate('/Admin/Home');
+      } else {
+        throw new Error(data?.error || 'Invalid credentials or CAPTCHA.');
       }
     } catch (err) {
       console.error('Login error:', err);
       
       // Enforce rate limiting message
-      if (err.message.includes('locked') || err.message.includes('Too many')) {
+      if (err.message?.includes('locked') || err.message?.includes('Too many') || err.status === 429) {
         setLocked(true);
         setError('Access locked: Too many failed attempts. Please wait 15 minutes.');
       } else {
-        setError('Invalid username, password, or CAPTCHA answer.');
+        setError(err.message || 'Invalid username, password, or CAPTCHA answer.');
         // Refresh captcha on failure
         loadCaptcha();
       }
@@ -122,7 +133,7 @@ export default function AdminLogin() {
           >
             <ShieldCheck size={28} />
           </div>
-          <h1 style={{ fontSize: '1.6rem', color: 'var(--secondary)' }}>CMS Control Center</h1>
+          <h1 style={{ fontSize: '1.6rem', color: 'var(--secondary)' }}>KLEF ACM Admin Portal</h1>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
             Chapter Administrator Login Portal
           </p>

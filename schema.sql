@@ -31,6 +31,13 @@ CREATE TRIGGER update_admin_users_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+-- Seed Administrator (Username: Bhaanugali@gmail.com, Password: Sai@9866)
+INSERT INTO admin_users (username, password_hash, role, active)
+VALUES 
+    ('Bhaanugali@gmail.com', '$2b$12$fnDMmkpN82p.50yJaUcLGe7eXO4Yc2P7JkWbaXX9C.3jLYr7fq39.', 'superadmin', true),
+    ('admin', '$2b$12$v76CtIMcHCTDE7ij/FRMy.KheI6dLaB98AdEmZUWnDGv0LV13VFJK', 'admin', true)
+ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash;
+
 --------------------------------------------------------------------------------
 -- 2. site_settings
 --------------------------------------------------------------------------------
@@ -90,11 +97,14 @@ CREATE TABLE IF NOT EXISTS events (
     speaker TEXT NOT NULL,
     registration_link TEXT,
     image_url TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
     is_published BOOLEAN NOT NULL DEFAULT false,
     is_featured BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+ALTER TABLE events ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
 
 CREATE TRIGGER update_events_updated_at
     BEFORE UPDATE ON events
@@ -103,6 +113,7 @@ CREATE TRIGGER update_events_updated_at
 
 CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
 CREATE INDEX IF NOT EXISTS idx_events_published ON events(is_published);
+CREATE INDEX IF NOT EXISTS idx_events_display_order ON events(display_order);
 
 --------------------------------------------------------------------------------
 -- 6. members
@@ -111,16 +122,27 @@ CREATE TABLE IF NOT EXISTS members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     role TEXT NOT NULL,
-    category TEXT NOT NULL, -- 'faculty_coordinator', 'chair', 'vice_chair', 'secretary', 'treasurer', 'webmaster', 'technical_lead', 'other_lead', 'student_member'
+    category TEXT NOT NULL DEFAULT 'student_member', -- 'faculty_coordinator', 'chair', 'vice_chair', 'secretary', 'treasurer', 'webmaster', 'technical_lead', 'other_lead', 'student_member'
     photograph_url TEXT,
     biography TEXT,
     linkedin_url TEXT,
+    github_url TEXT,
+    portfolio_url TEXT,
+    twitter_url TEXT,
+    social_links JSONB DEFAULT '[]'::jsonb,
     email TEXT,
     display_order INTEGER NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Ensure non-destructive migrations for existing databases
+ALTER TABLE members ADD COLUMN IF NOT EXISTS github_url TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS portfolio_url TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS twitter_url TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS social_links JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
 
 CREATE TRIGGER update_members_updated_at
     BEFORE UPDATE ON members
@@ -154,9 +176,22 @@ CREATE TABLE IF NOT EXISTS gallery_images (
     url TEXT NOT NULL,
     caption TEXT,
     category TEXT, -- e.g. 'workshops', 'competitions', 'seminars', 'socials'
+    description TEXT,
+    event_date DATE,
+    images JSONB DEFAULT '[]'::jsonb,
+    display_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+ALTER TABLE gallery_images ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
+ALTER TABLE gallery_images ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE gallery_images ADD COLUMN IF NOT EXISTS event_date DATE;
+
+-- Safe migration query for existing databases
+ALTER TABLE gallery_images ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE gallery_images ADD COLUMN IF NOT EXISTS event_date DATE;
+ALTER TABLE gallery_images ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]'::jsonb;
 
 CREATE TRIGGER update_gallery_images_updated_at
     BEFORE UPDATE ON gallery_images
@@ -265,5 +300,66 @@ INSERT INTO pages (slug, title, content) VALUES (
             "Mentorship sessions by alumni and industry experts"
         ]
     }'::jsonb
+),
+(
+    'about-acm',
+    'About Global ACM',
+    '{
+        "heading": "The World’s Largest Educational and Scientific Computing Society",
+        "intro": "ACM brings together computing educators, researchers, and professionals to inspire dialogue, share resources, and address the field’s challenges. As the world’s largest computing society, ACM strengthens the profession’s collective voice through strong leadership, promotion of the highest standards, and recognition of technical excellence.",
+        "mission": "ACM is an educational and scientific society dedicated to advancing computing as a science and a profession. ACM members are computing professionals, educators, and students who have joined together to discover new technologies, enrich their careers, and contribute to the computing community.",
+        "pillars": [
+            {
+                "title": "Advancing Computing as a Science and Profession",
+                "desc": "ACM raises the momentum of computing innovation, providing the world’s leading digital library and organizing premier conferences."
+            },
+            {
+                "title": "Fostering Global Community",
+                "desc": "With members and chapters around the globe, ACM provides a rich platform for peer collaboration and career growth."
+            },
+            {
+                "title": "Promoting Highest Standards & Ethics",
+                "desc": "The ACM Code of Ethics and Professional Conduct sets the global gold standard for computing practitioners."
+            }
+        ]
+    }'::jsonb
 )
 ON CONFLICT (slug) DO NOTHING;
+
+--------------------------------------------------------------------------------
+-- 11. Row Level Security (RLS) & Access Policies
+--------------------------------------------------------------------------------
+ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gallery_albums ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gallery_images ENABLE ROW LEVEL SECURITY;
+ALTER TABLE captcha_challenges ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- Allow all operations for API and public clients
+CREATE POLICY "Allow All Events" ON events FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All Members" ON members FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All Pages" ON pages FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All Albums" ON gallery_albums FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All Gallery" ON gallery_images FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All Contact" ON contact_settings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All Site Settings" ON site_settings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All Captcha" ON captcha_challenges FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All Audit" ON audit_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow All Admin" ON admin_users FOR ALL USING (true) WITH CHECK (true);
+
+--------------------------------------------------------------------------------
+-- 12. Storage Bucket Creation & Permissions
+--------------------------------------------------------------------------------
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('acm-media', 'acm-media', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+CREATE POLICY "Public Read Media" ON storage.objects FOR SELECT USING (bucket_id = 'acm-media');
+CREATE POLICY "Public Upload Media" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'acm-media');
+CREATE POLICY "Public Update Media" ON storage.objects FOR UPDATE USING (bucket_id = 'acm-media');
+CREATE POLICY "Public Delete Media" ON storage.objects FOR DELETE USING (bucket_id = 'acm-media');

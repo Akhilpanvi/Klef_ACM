@@ -1,6 +1,38 @@
-import cookie from 'cookie';
 import { supabase } from './utils/db.js';
 import { getAdminSession } from './utils/auth.js';
+
+function serializeCookie(name, val, options = {}) {
+  let str = `${name}=${encodeURIComponent(val)}`;
+  if (options.maxAge != null) {
+    str += `; Max-Age=${Math.floor(options.maxAge)}`;
+  }
+  if (options.domain) {
+    str += `; Domain=${options.domain}`;
+  }
+  if (options.path) {
+    str += `; Path=${options.path}`;
+  }
+  if (options.expires) {
+    str += `; Expires=${options.expires.toUTCString()}`;
+  }
+  if (options.httpOnly) {
+    str += '; HttpOnly';
+  }
+  if (options.secure) {
+    str += '; Secure';
+  }
+  if (options.sameSite) {
+    const sameSite = typeof options.sameSite === 'string' ? options.sameSite.toLowerCase() : options.sameSite;
+    if (sameSite === true || sameSite === 'strict') {
+      str += '; SameSite=Strict';
+    } else if (sameSite === 'lax') {
+      str += '; SameSite=Lax';
+    } else if (sameSite === 'none') {
+      str += '; SameSite=None';
+    }
+  }
+  return str;
+}
 
 export async function handler(event, context) {
   const headers = {
@@ -37,7 +69,7 @@ export async function handler(event, context) {
     }
 
     // Clear session cookie
-    const serializedCookie = cookie.serialize('acm_session', '', {
+    const serializedCookie = serializeCookie('acm_session', '', {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',

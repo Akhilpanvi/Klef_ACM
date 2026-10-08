@@ -3,10 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Services
 import { api } from './services/api';
+import { subscribeToRealtimeUpdates } from './services/realtime';
 
 // Layouts & Components
 import PublicLayout from './layouts/PublicLayout';
-import AdminLayout from './layouts/AdminLayout';
+import VisualAdminLayout from './layouts/VisualAdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
@@ -18,8 +19,6 @@ import AboutAcm from './pages/AboutAcm';
 import AboutKlefAcm from './pages/AboutKlefAcm';
 import Contact from './pages/Contact';
 import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminEditPage from './pages/AdminEditPage';
 
 // Context Definitions
 export const AuthContext = createContext(null);
@@ -32,14 +31,16 @@ export default function App() {
     loading: true,
   });
 
-  const [siteData, setSiteData] = useState({
+  // Instant hydration from local client cache
+  const initialCache = api.getCachedPublicData();
+  const [siteData, setSiteData] = useState(initialCache || {
     events: [],
     members: [],
     pages: {},
     gallery: [],
     contact: {},
   });
-  const [siteDataLoading, setSiteDataLoading] = useState(true);
+  const [siteDataLoading, setSiteDataLoading] = useState(!initialCache);
 
   // Verifies the administrator session on mount
   const checkAuth = async () => {
@@ -68,18 +69,23 @@ export default function App() {
     }
   };
 
-  // Fetches all public content at once (High Performance)
-  const triggerDataRefresh = async () => {
+  // Fetches all public content at once with Stale-While-Revalidate speed
+  const triggerDataRefresh = async (isBackground = false) => {
     try {
-      setSiteDataLoading(true);
+      // Only show blocking loader if we have zero cached data to render
+      if (!isBackground && !siteData?.members?.length && !siteData?.events?.length && !initialCache) {
+        setSiteDataLoading(true);
+      }
       const data = await api.getPublicData('all');
-      setSiteData({
-        events: data.events || [],
-        members: data.members || [],
-        pages: data.pages || {},
-        gallery: data.gallery || [],
-        contact: data.contact || {},
-      });
+      if (data) {
+        setSiteData({
+          events: data.events || [],
+          members: data.members || [],
+          pages: data.pages || {},
+          gallery: data.gallery || [],
+          contact: data.contact || {},
+        });
+      }
     } catch (err) {
       console.error('Failed to load public site data:', err);
     } finally {
@@ -89,51 +95,82 @@ export default function App() {
 
   useEffect(() => {
     checkAuth();
-    triggerDataRefresh();
+    triggerDataRefresh(Boolean(initialCache));
+
+    // Subscribe to live database updates across all tables
+    const unsubscribe = subscribeToRealtimeUpdates((update) => {
+      console.log(`[Realtime Sync] Live update detected: ${update.table} (${update.event} from ${update.source || 'db'})`);
+      triggerDataRefresh(true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   return (
     <AuthContext.Provider value={{ auth, setAuth, checkAuth }}>
-      <SiteDataContext.Provider value={{ siteData, siteDataLoading, triggerDataRefresh }}>
+      <SiteDataContext.Provider value={{ siteData, setSiteData, siteDataLoading, triggerDataRefresh }}>
         <BrowserRouter basename="/KLEF-ACM-SC">
           <Routes>
-            {/* PUBLIC WEBSITE ROUTES */}
+            {/* PUBLIC WEBSITE ROUTES - CAPITALIZED WITH DEEP LINKS */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
-              <Route path="/events" element={<Events />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/members" element={<Members />} />
-              <Route path="/about-acm" element={<AboutAcm />} />
-              <Route path="/about-klef-acm" element={<AboutKlefAcm />} />
-              <Route path="/contact" element={<Contact />} />
+              <Route path="/Home" element={<Home />} />
+              
+              <Route path="/Events" element={<Events />} />
+              <Route path="/Events/:eventName" element={<Events />} />
+              <Route path="/Events/:eventName/:date" element={<Events />} />
+              <Route path="/events" element={<Navigate to="/Events" replace />} />
+              <Route path="/events/:eventName" element={<Events />} />
+              <Route path="/events/:eventName/:date" element={<Events />} />
+              
+              <Route path="/Gallery" element={<Gallery />} />
+              <Route path="/Gallery/:eventTitle" element={<Gallery />} />
+              <Route path="/gallery" element={<Navigate to="/Gallery" replace />} />
+              <Route path="/gallery/:eventTitle" element={<Gallery />} />
+              
+              <Route path="/Members" element={<Members />} />
+              <Route path="/Members/:name" element={<Members />} />
+              <Route path="/Members/:name/:role" element={<Members />} />
+              <Route path="/members" element={<Navigate to="/Members" replace />} />
+              <Route path="/members/:name" element={<Members />} />
+              <Route path="/members/:name/:role" element={<Members />} />
+              
+              <Route path="/About-ACM" element={<AboutAcm />} />
+              <Route path="/about-acm" element={<Navigate to="/About-ACM" replace />} />
+              
+              <Route path="/About-KLEF-ACM" element={<AboutKlefAcm />} />
+              <Route path="/About-KLU-ACM" element={<Navigate to="/About-KLEF-ACM" replace />} />
+              <Route path="/about-klef-acm" element={<Navigate to="/About-KLEF-ACM" replace />} />
+              <Route path="/about-klu-acm" element={<Navigate to="/About-KLEF-ACM" replace />} />
+              
+              <Route path="/Contact" element={<Contact />} />
+              <Route path="/contact" element={<Navigate to="/Contact" replace />} />
             </Route>
 
-            {/* ADMIN LOGIN */}
-            <Route path="/admin/login" element={<AdminLogin />} />
+            {/* ADMIN LOGIN ROUTES */}
+            <Route path="/Admin/Log-in" element={<AdminLogin />} />
+            <Route path="/Admin/Login" element={<Navigate to="/Admin/Log-in" replace />} />
+            <Route path="/admin/login" element={<Navigate to="/Admin/Log-in" replace />} />
 
-            {/* ADMIN BASE REDIRECT (admin -> admin/login if unauthenticated) */}
-            <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
-
-            {/* PROTECTED ADMIN ROUTE OUTLET */}
+            {/* PROTECTED VISUAL WYSIWYG ADMIN CMS ROUTES */}
             <Route
-              path="/admin/*"
+              path="/Admin"
               element={
                 <ProtectedRoute>
-                  <Routes>
-                    <Route element={<AdminLayout />}>
-                      <Route path="/" element={<AdminDashboard />} />
-                      <Route path="/:section" element={<AdminEditPage />} />
-                      <Route path="/:section/edit" element={<AdminEditPage />} />
-                    </Route>
-                    {/* Catch-all to direct back to dashboard */}
-                    <Route path="*" element={<Navigate to="/admin" replace />} />
-                  </Routes>
+                  <VisualAdminLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<Navigate to="/Admin/Home" replace />} />
+              <Route path=":section" element={null} />
+              <Route path=":section/Edit" element={null} />
+              <Route path=":section/edit" element={null} />
+            </Route>
 
             {/* GLOBAL 404 CATCH-ALL */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/Home" replace />} />
           </Routes>
         </BrowserRouter>
       </SiteDataContext.Provider>

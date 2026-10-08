@@ -1,26 +1,38 @@
 import { useContext, useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { SiteDataContext } from '../App';
-import { ScrollReveal, TextReveal, SplitText } from '../components/ScrollReveal';
+import { ScrollReveal, SplitText } from '../components/ScrollReveal';
+import VisualEditable from '../components/VisualEditor/VisualEditable';
+import PageBlockList from '../components/VisualEditor/PageBlockList';
 
 export default function AboutAcm() {
   const { siteData } = useContext(SiteDataContext);
   const pageData = siteData?.pages?.['about-acm']?.content || {};
 
+  const getString = (val, fallback = '') => {
+    if (!val) return fallback;
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object') {
+      if (val.heading && val.text) return `${val.heading}: ${val.text}`;
+      return val.text || val.heading || val.description || val.value || fallback;
+    }
+    return String(val);
+  };
+
   // Factual, authoritative summaries of ACM's global operations
-  const introduction = pageData.introduction || "The Association for Computing Machinery (ACM) is the world's largest educational and scientific computing society, delivering resources that advance computing as a science and a profession.";
-  const whatAcmIs = pageData.what_acm_is || "ACM is a global society of over 100,000 computing professionals, researchers, and educators. It serves as the primary gateway to computer science research and professional practice, providing opportunities for professional development, networking, and curricular design guidelines.";
-  const purpose = pageData.purpose || "ACM's purpose is to advance computing as a science and a profession, promoting the highest standards and technical excellence. The society collectively advocates for ethical computing, the dissemination of cutting-edge research, and computing educational guidelines globally.";
-  const community = pageData.community || "ACM brings together a diverse community of practitioners, educators, researchers, and students. By hosting active Special Interest Groups, chapters, and digital forums, ACM promotes collaboration and technical sharing across all domains of the computing profession.";
-  const publications = pageData.publications || "ACM publishes prestigious journals, magazines, and technical newsletters. These peer-reviewed publications represent the foundational record of computer science progress, covering domains from compiler design to artificial intelligence.";
-  const digitalLibrary = pageData.digital_library || "The ACM Digital Library is a comprehensive database containing bibliographic literature, research papers, and technical proceedings. It is the premier research repository in computer science, used worldwide by academic and corporate institutions.";
-  const conferences = pageData.conferences || "ACM Special Interest Groups (SIGs) organize and sponsor over 170 international conferences and workshops annually. These events are the foremost venues for presenting breakthrough technologies and networking with senior researchers.";
-  const awards = pageData.awards || "ACM honors technical achievement and service through a comprehensive awards program. Most notably, the ACM A.M. Turing Award—widely considered the 'Nobel Prize of Computing'—recognizes contributions of lasting technical importance.";
-  const chapters = pageData.chapters || "ACM chapters serve as local hubs for members and the computing community. Professional Chapters provide networking for practitioners, while Student Chapters establish active computing environments in academic institutions.";
-  const studentChapters = pageData.student_chapters || "ACM Student Chapters support students through workshops, hackathons, guest lectures, and networking. They encourage leadership development, collaborative engineering projects, and direct engagement with professional ACM structures.";
-  const ethics = pageData.ethics || "ACM members and chapters operate under the ACM Code of Ethics and Professional Conduct. The Code outlines guidelines for computing practitioners to respect privacy, avoid harm, design for accessibility, and uphold professional integrity.";
-  const acmW = pageData.acm_w || "ACM-W supports and advocates for the full engagement of women in computing globally. Through scholarships, local celebrations, and student chapters, ACM-W works to improve recruitment, retention, and mentoring of women in the computing community.";
-  const acmIndia = pageData.acm_india || "ACM India promotes computing activities, academic collaborations, and research initiatives within the country. It assists Indian student and professional chapters in establishing high-quality workshops, networking, and career forums.";
+  const introduction = getString(pageData.introduction, "The Association for Computing Machinery (ACM) is the world's largest educational and scientific computing society, delivering resources that advance computing as a science and a profession.");
+  const whatAcmIs = getString(pageData.what_acm_is, "ACM is a global society of over 100,000 computing professionals, researchers, and educators. It serves as the primary gateway to computer science research and professional practice, providing opportunities for professional development, networking, and curricular design guidelines.");
+  const purpose = getString(pageData.purpose, "ACM's purpose is to advance computing as a science and a profession, promoting the highest standards and technical excellence. The society collectively advocates for ethical computing, the dissemination of cutting-edge research, and computing educational guidelines globally.");
+  const community = getString(pageData.community, "ACM brings together a diverse community of practitioners, educators, researchers, and students. By hosting active Special Interest Groups, chapters, and digital forums, ACM promotes collaboration and technical sharing across all domains of the computing profession.");
+  const publications = getString(pageData.publications, "ACM publishes prestigious journals, magazines, and technical newsletters. These peer-reviewed publications represent the foundational record of computer science progress, covering domains from compiler design to artificial intelligence.");
+  const digitalLibrary = getString(pageData.digital_library, "The ACM Digital Library is a comprehensive database containing bibliographic literature, research papers, and technical proceedings. It is the premier research repository in computer science, used worldwide by academic and corporate institutions.");
+  const conferences = getString(pageData.conferences, "ACM Special Interest Groups (SIGs) organize and sponsor over 170 international conferences and workshops annually. These events are the foremost venues for presenting breakthrough technologies and networking with senior researchers.");
+  const awards = getString(pageData.awards, "ACM honors technical achievement and service through a comprehensive awards program. Most notably, the ACM A.M. Turing Award—widely considered the 'Nobel Prize of Computing'—recognizes contributions of lasting technical importance.");
+  const chapters = getString(pageData.chapters, "ACM chapters serve as local hubs for members and the computing community. Professional Chapters provide networking for practitioners, while Student Chapters establish active computing environments in academic institutions.");
+  const studentChapters = getString(pageData.student_chapters, "ACM Student Chapters support students through workshops, hackathons, guest lectures, and networking. They encourage leadership development, collaborative engineering projects, and direct engagement with professional ACM structures.");
+  const ethics = getString(pageData.ethics, "ACM members and chapters operate under the ACM Code of Ethics and Professional Conduct. The Code outlines guidelines for computing practitioners to respect privacy, avoid harm, design for accessibility, and uphold professional integrity.");
+  const acmW = getString(pageData.acm_w, "ACM-W supports and advocates for the full engagement of women in computing globally. Through scholarships, local celebrations, and student chapters, ACM-W works to improve recruitment, retention, and mentoring of women in the computing community.");
+  const acmIndia = getString(pageData.acm_india, "ACM India promotes computing activities, academic collaborations, and research initiatives within the country. It assists Indian student and professional chapters in establishing high-quality workshops, networking, and career forums.");
 
   // Parse official links
   const defaultLinks = [
@@ -108,25 +120,33 @@ export default function AboutAcm() {
   };
 
   return (
-    <div style={{ backgroundColor: '#ffffff', minHeight: '80vh', paddingBottom: '100px' }}>
-      
+    <div style={{ backgroundColor: '#FCFCFD', minHeight: '80vh', paddingBottom: '88px' }}>
       {/* Page Title Header */}
-      <section style={{ backgroundColor: 'var(--bg-main)', padding: '64px 0', borderBottom: '1px solid var(--border)' }}>
+      <section style={{ backgroundColor: '#FFFFFF', padding: '72px 0', borderBottom: '1px solid var(--border-light)' }}>
         <div className="container">
-          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>
-            Parent Organization
-          </span>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--secondary)', letterSpacing: '-0.02em', marginBottom: '16px', maxWidth: '650px' }}>
-            <TextReveal text="Association for Computing Machinery" duration={900} />
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: '1.6', maxWidth: '600px', margin: 0 }}>
-            {introduction}
-          </p>
+          <VisualEditable
+            name="page_tag"
+            as="span"
+            defaultValue="Parent Organization"
+            className="editorial-kicker"
+          />
+          <VisualEditable
+            name="page_title"
+            as="h1"
+            defaultValue="Association for Computing Machinery"
+            style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '-0.025em', marginBottom: '16px', maxWidth: '720px' }}
+          />
+          <VisualEditable
+            name="introduction"
+            as="p"
+            defaultValue={introduction}
+            style={{ color: 'var(--slate-600)', fontSize: '1.05rem', lineHeight: '1.7', maxWidth: '680px', margin: 0 }}
+          />
         </div>
       </section>
 
-      {/* Mobile Anchor Navigation (Horizontal Tags) */}
-      <div className="mobile-nav-tags-container" style={{ borderBottom: '1px solid var(--border)', backgroundColor: '#ffffff', position: 'sticky', top: 'var(--header-height)', zIndex: 90 }}>
+      {/* Mobile Anchor Navigation */}
+      <div className="mobile-nav-tags-container" style={{ borderBottom: '1px solid var(--border-light)', backgroundColor: '#FFFFFF', position: 'sticky', top: 'var(--header-height)', zIndex: 90 }}>
         <div className="container" style={{ overflowX: 'auto', whiteSpace: 'nowrap', padding: '12px 24px', display: 'flex', gap: '8px', scrollbarWidth: 'none' }}>
           {sections.map(sec => (
             <a 
@@ -134,15 +154,15 @@ export default function AboutAcm() {
               href={`#${sec.id}`}
               onClick={(e) => handleAnchorClick(e, sec.id)}
               style={{ 
-                fontSize: '0.75rem', 
+                fontSize: '0.78rem', 
                 fontWeight: '600', 
-                color: activeSection === sec.id ? 'var(--primary)' : 'var(--text-muted)', 
-                border: '1px solid var(--border)', 
-                borderColor: activeSection === sec.id ? 'var(--primary)' : 'var(--border)',
-                padding: '6px 12px', 
-                borderRadius: 'var(--radius-sm)', 
+                color: activeSection === sec.id ? 'var(--primary)' : 'var(--slate-600)', 
+                border: '1px solid var(--border-light)', 
+                borderColor: activeSection === sec.id ? 'var(--primary)' : 'var(--border-light)',
+                padding: '6px 14px', 
+                borderRadius: '2px', 
                 textDecoration: 'none', 
-                backgroundColor: activeSection === sec.id ? 'var(--primary-light)' : 'var(--bg-main)', 
+                backgroundColor: activeSection === sec.id ? 'var(--primary-light)' : '#FFFFFF', 
                 display: 'inline-block' 
               }}
               className="mobile-tag-link"
@@ -153,34 +173,40 @@ export default function AboutAcm() {
         </div>
       </div>
 
-      {/* Two Column Grid */}
-      <section className="section" style={{ padding: '48px 0' }}>
-        <div className="container about-acm-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '64px', alignItems: 'start' }}>
+      {/* Two Column Layout Grid */}
+      <section className="section" style={{ padding: '56px 0' }}>
+        <div className="container about-acm-grid" style={{ display: 'grid', gridTemplateColumns: '1.3fr 0.7fr', gap: '64px', alignItems: 'start' }}>
           
           {/* Left Column: Documentation Sections */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
             {sections.map((sec, idx) => (
-              <ScrollReveal key={sec.id} delay={0} duration={750} yOffset={25}>
+              <ScrollReveal key={sec.id} delay={0} duration={600} yOffset={20}>
                 <div 
                   id={sec.id} 
                   style={{ 
-                    borderBottom: '1px solid var(--border)', 
-                    paddingBottom: '32px',
-                    scrollMarginTop: '120px' // fallback scroll boundary
+                    borderBottom: '1px solid var(--border-light)', 
+                    paddingBottom: '36px',
+                    scrollMarginTop: '110px'
                   }}
                 >
-                  <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 42px)', color: 'var(--secondary)', marginBottom: '16px', letterSpacing: '-0.03em', fontWeight: '800', lineHeight: '1.1' }}>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: '600', color: 'var(--primary)', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>
+                    0{idx + 1} //
+                  </span>
+                  <h2 style={{ fontSize: 'clamp(24px, 3.2vw, 36px)', color: 'var(--navy-900)', marginBottom: '14px', letterSpacing: '-0.025em', fontWeight: '800', lineHeight: '1.2' }}>
                     <SplitText line1={sec.line1} line2={sec.line2} delay={50} />
                   </h2>
-                  <p style={{ color: 'var(--text-main)', fontSize: '0.95rem', lineHeight: '1.75', margin: 0 }}>
-                    {sec.content}
-                  </p>
+                  <VisualEditable
+                    name={sec.id}
+                    as="p"
+                    defaultValue={sec.content}
+                    style={{ color: 'var(--slate-600)', fontSize: '1rem', lineHeight: '1.8', margin: 0 }}
+                  />
                   {sec.link && (
                     <a 
                       href={sec.link} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: 'var(--primary)', fontWeight: '600', marginTop: '12px', textDecoration: 'none' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.86rem', color: 'var(--primary)', fontWeight: '700', marginTop: '16px', textDecoration: 'none' }}
                       className="text-hover-line"
                     >
                       Official Reference <ArrowUpRight size={14} />
@@ -189,13 +215,16 @@ export default function AboutAcm() {
                 </div>
               </ScrollReveal>
             ))}
+
+            {/* Free-Form Content Blocks */}
+            <PageBlockList blockKey="about_acm_blocks" style={{ marginTop: '32px' }} />
           </div>
 
           {/* Right Column: Sticky Sidebar Contents */}
-          <div className="desktop-sidebar" style={{ position: 'sticky', top: '120px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div className="desktop-sidebar" style={{ position: 'sticky', top: '110px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             {/* Table of Contents anchors */}
-            <div style={{ border: '1px solid var(--border)', padding: '24px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-main)' }}>
-              <h3 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: '8px', marginBottom: '16px', marginTop: 0 }}>
+            <div style={{ border: '1px solid var(--border-light)', padding: '28px', borderRadius: '4px', backgroundColor: '#FFFFFF' }}>
+              <h3 style={{ fontSize: '0.78rem', color: 'var(--slate-500)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', marginBottom: '16px', marginTop: 0 }}>
                 Table of Contents
               </h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -205,22 +234,22 @@ export default function AboutAcm() {
                       href={`#${sec.id}`}
                       onClick={(e) => handleAnchorClick(e, sec.id)}
                       style={{ 
-                        fontSize: '0.85rem', 
-                        color: activeSection === sec.id ? 'var(--primary)' : 'var(--text-main)', 
+                        fontSize: '0.86rem', 
+                        color: activeSection === sec.id ? 'var(--primary)' : 'var(--navy-700)', 
                         textDecoration: 'none', 
-                        fontWeight: '500', 
+                        fontWeight: activeSection === sec.id ? '700' : '500', 
                         display: 'flex',
                         alignItems: 'center',
                         gap: activeSection === sec.id ? '8px' : '0px',
                         transform: activeSection === sec.id ? 'translateX(4px)' : 'translateX(0)',
-                        transition: 'all 0.25s cubic-bezier(0.22, 1, 0.36, 1)' 
+                        transition: 'all 0.2s ease' 
                       }}
                       className="sidebar-anchor-link"
                     >
                       {activeSection === sec.id && (
                         <span style={{ 
-                          width: '10px', 
-                          height: '1.5px', 
+                          width: '8px', 
+                          height: '2px', 
                           backgroundColor: 'var(--primary)', 
                           display: 'inline-block' 
                         }} />
@@ -233,8 +262,8 @@ export default function AboutAcm() {
             </div>
 
             {/* Official Explore Links */}
-            <div style={{ border: '1px solid var(--border)', padding: '24px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-main)' }}>
-              <h3 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', paddingBottom: '8px', marginBottom: '16px', marginTop: 0 }}>
+            <div style={{ border: '1px solid var(--border-light)', padding: '28px', borderRadius: '4px', backgroundColor: '#FFFFFF' }}>
+              <h3 style={{ fontSize: '0.78rem', color: 'var(--slate-500)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', marginBottom: '16px', marginTop: 0 }}>
                 Explore ACM
               </h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -245,7 +274,7 @@ export default function AboutAcm() {
                       target="_blank" 
                       rel="noopener noreferrer" 
                       style={{ 
-                        fontSize: '0.9rem', 
+                        fontSize: '0.88rem', 
                         color: 'var(--primary)', 
                         textDecoration: 'none', 
                         fontWeight: '600',

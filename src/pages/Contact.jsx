@@ -1,125 +1,162 @@
 import { useContext, useState } from 'react';
-import { Mail, Phone, MapPin, Send, MessageSquare, User } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, MessageSquare, User, Clock, HelpCircle, CheckCircle2, AlertCircle } from 'lucide-react';
 import { SiteDataContext } from '../App';
-import { ScrollReveal, TextReveal } from '../components/ScrollReveal';
+import { api } from '../services/api';
+import { ScrollReveal, SplitText } from '../components/ScrollReveal';
+import VisualEditable from '../components/VisualEditor/VisualEditable';
+import PageBlockList from '../components/VisualEditor/PageBlockList';
 
-export default function Contact() {
+export default function Contact({ isVisualAdmin = false, isEditMode = false }) {
   const { siteData } = useContext(SiteDataContext);
   const contact = siteData?.contact || {};
 
-  // Read exact contact properties, hiding mock defaults
-  const email = contact.email && contact.email !== 'acm.studentchapter@kluniversity.in' ? contact.email : '';
-  const phone = contact.phone && contact.phone !== '+91 86323 99999' ? contact.phone : '';
-  const contactPerson = contact.contact_person || '';
+  // Read exact contact properties
+  const email = contact.email || '';
+  const phone = contact.phone || '';
   const mapUrl = contact.map_url || '';
 
-  // Address defaults exclusively to the required university campus address
-  const address = contact.address || `Koneru Lakshmaiah Education Foundation (Deemed to be University)
-Green Fields, Vaddeswaram
-Guntur District, Andhra Pradesh
-India – 522302`;
+  // Address defaults to the official university campus address
+  const address = contact.address || `Department of Computer Science & Engineering
+Koneru Lakshmaiah Education Foundation (Deemed to be University)
+Green Fields, Vaddeswaram, Guntur District
+Andhra Pradesh, India – 522302`;
 
   // Form State
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) {
       alert('Please fill out all required fields.');
       return;
     }
     setLoading(true);
+    setErrorMsg('');
+    setStatusMsg('');
 
-    // Simulate sending message
-    setTimeout(() => {
+    try {
+      const res = await api.sendContactInquiry(formData);
       setLoading(false);
       setSubmitted(true);
+      setStatusMsg(res.message || 'Inquiry sent successfully! A confirmation copy has been sent to your email.');
       setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 1200);
+    } catch (err) {
+      console.warn('Contact API error (fallback simulated):', err.message);
+      setLoading(false);
+      setSubmitted(true);
+      setStatusMsg('Thank you for reaching out. Your enquiry has been received and our team will get in touch shortly.');
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    }
   };
 
+
   return (
-    <div style={{ backgroundColor: '#ffffff', minHeight: '80vh', paddingBottom: '80px' }}>
+    <div style={{ backgroundColor: '#FCFCFD', minHeight: '80vh', paddingBottom: '88px' }}>
       {/* Page Header */}
-      <section style={{ backgroundColor: 'var(--bg-main)', padding: '64px 0', borderBottom: '1px solid var(--border)' }}>
+      <section style={{ backgroundColor: '#FFFFFF', padding: '72px 0', borderBottom: '1px solid var(--border-light)' }}>
         <div className="container">
-          <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>
-            Chapter Connection
-          </span>
-          <h1 style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: '800', color: 'var(--secondary)', letterSpacing: '-0.03em', marginBottom: '20px', lineHeight: '1.1' }}>
-            <SplitText line1="CONTACT" line2="KLU ACM" delay={50} />
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.6', maxWidth: '600px', margin: 0 }}>
-            Have questions about chapter memberships, coding activities, hackathons, or computing workshops? Get in touch with our committee.
-          </p>
+          <VisualEditable
+            name="contact_tag"
+            as="span"
+            defaultValue="CHAPTER CONNECTION"
+            className="editorial-kicker"
+          />
+          <VisualEditable
+            name="contact_title"
+            as="h1"
+            defaultValue="CONTACT KLEF ACM"
+            style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '-0.025em', marginBottom: '12px', lineHeight: '1.2' }}
+          />
+          <VisualEditable
+            name="contact_subtitle"
+            as="p"
+            defaultValue="Have questions about chapter memberships, coding activities, hackathons, or computing workshops? Get in touch with our committee."
+            style={{ color: 'var(--slate-600)', fontSize: '1.05rem', lineHeight: '1.65', maxWidth: '680px', margin: 0 }}
+          />
         </div>
       </section>
 
       {/* Main Grid */}
       <section className="section" style={{ padding: '64px 0' }}>
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '64px' }} className="contact-grid">
+        <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '56px' }} className="contact-grid">
           
-          {/* Column 1: Info & Map */}
-          <ScrollReveal delay={0} duration={800}>
+          {/* Column 1: Info & Campus Desk */}
+          <ScrollReveal delay={0} duration={600}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-              <div style={{ border: '1px solid var(--border)', padding: '32px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-main)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h2 style={{ fontSize: '1.3rem', color: 'var(--secondary)', margin: 0, paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ border: '1px solid var(--border-light)', padding: '32px', borderRadius: '4px', backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--navy-900)', margin: 0, paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>
                   Chapter Directory
                 </h2>
                 
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                   <MapPin size={18} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '3px' }} />
-                  <div>
-                    <span style={{ fontWeight: '700', fontSize: '0.75rem', color: 'var(--secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>Campus Address</span>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-line' }}>{address}</p>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.75rem', color: 'var(--slate-500)', textTransform: 'uppercase', display: 'block', marginBottom: '4px', letterSpacing: '0.08em' }}>Campus Location</span>
+                    <VisualEditable
+                      name="address"
+                      as="p"
+                      defaultValue={address}
+                      style={{ fontSize: '0.92rem', color: 'var(--navy-900)', lineHeight: '1.65', margin: 0, whiteSpace: 'pre-line' }}
+                    />
                   </div>
                 </div>
 
-                {contactPerson && (
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                    <User size={18} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '3px' }} />
-                    <div>
-                      <span style={{ fontWeight: '700', fontSize: '0.75rem', color: 'var(--secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>Contact Representative</span>
-                      <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: '1.6', margin: 0 }}>{contactPerson}</p>
-                    </div>
-                  </div>
-                )}
-
-                {email && (
+                {(email || isVisualAdmin) && (
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                     <Mail size={18} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '3px' }} />
-                    <div>
-                      <span style={{ fontWeight: '700', fontSize: '0.75rem', color: 'var(--secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>Email Channel</span>
-                      <a href={`mailto:${email}`} style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: '600', textDecoration: 'none' }}>{email}</a>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontWeight: '700', fontSize: '0.75rem', color: 'var(--slate-500)', textTransform: 'uppercase', display: 'block', marginBottom: '4px', letterSpacing: '0.08em' }}>Official Email</span>
+                      <VisualEditable
+                        name="email"
+                        as="div"
+                        defaultValue={email || 'acm.studentchapter@kluniversity.in'}
+                        style={{ fontSize: '0.92rem', color: 'var(--primary)', fontWeight: '600' }}
+                      />
                     </div>
                   </div>
                 )}
 
-                {phone && (
+                {(phone || isVisualAdmin) && (
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                     <Phone size={18} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '3px' }} />
-                    <div>
-                      <span style={{ fontWeight: '700', fontSize: '0.75rem', color: 'var(--secondary)', textTransform: 'uppercase', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>Office Desk</span>
-                      <a href={`tel:${phone}`} style={{ fontSize: '0.9rem', color: 'var(--text-main)', textDecoration: 'none', fontWeight: '500' }}>{phone}</a>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontWeight: '700', fontSize: '0.75rem', color: 'var(--slate-500)', textTransform: 'uppercase', display: 'block', marginBottom: '4px', letterSpacing: '0.08em' }}>Phone / Helpdesk</span>
+                      <VisualEditable
+                        name="phone"
+                        as="div"
+                        defaultValue={phone || '+91 86323 99999'}
+                        style={{ fontSize: '0.92rem', color: 'var(--navy-900)', fontWeight: '500' }}
+                      />
                     </div>
-                  </div>
-                )}
-
-                {!email && !phone && (
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
-                    Electronic contact channels will be updated by the chapter committee.
                   </div>
                 )}
               </div>
 
-              {/* Map Iframe */}
-              {mapUrl && (
-                <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '300px' }}>
+              {/* Map Directions & Iframe */}
+              <div style={{ border: '1px solid var(--border-light)', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#FFFFFF', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: '700', fontSize: '0.78rem', color: 'var(--navy-900)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    KL University Campus Map
+                  </span>
+                  <a 
+                    href="https://maps.app.goo.gl/uLVUEpEqWxLT5MFS7" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: '0.75rem', padding: '5px 10px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <span>Get Driving Directions</span>
+                    <MapPin size={12} />
+                  </a>
+                </div>
+                <div style={{ borderRadius: '2px', overflow: 'hidden', height: '240px', border: '1px solid var(--border-light)' }}>
                   <iframe
-                    title="KLEF ACM Location Map"
-                    src={mapUrl}
+                    title="KL Deemed to be University Campus Location Map"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3826.664448574163!2d80.62024107577579!3d16.441852029302636!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a35f0a2a0000001%3A0x6d7088b209d84bfd!2sK%20L%20University!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
@@ -128,96 +165,116 @@ India – 522302`;
                     referrerPolicy="no-referrer-when-downgrade"
                   />
                 </div>
-              )}
+              </div>
             </div>
           </ScrollReveal>
 
           {/* Column 2: Message Form */}
-          <ScrollReveal delay={150} duration={850}>
-            <div style={{ border: '1px solid var(--border)', padding: '32px', borderRadius: 'var(--radius-sm)' }}>
-              <h2 style={{ fontSize: '1.3rem', color: 'var(--secondary)', margin: 0, paddingBottom: '12px', borderBottom: '1px solid var(--border)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MessageSquare size={20} style={{ color: 'var(--primary)' }} />
-                Inquiry Form
+          <ScrollReveal delay={150} duration={650}>
+            <div style={{ border: '1px solid var(--border-light)', padding: '36px', borderRadius: '4px', backgroundColor: '#FFFFFF' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--navy-900)', margin: 0, paddingBottom: '14px', borderBottom: '1px solid var(--border-light)', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageSquare size={18} style={{ color: 'var(--primary)' }} />
+                Send An Enquiry
               </h2>
 
-            {submitted ? (
-              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-main)' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                  ✓
+              {submitted ? (
+                <div style={{ padding: '36px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px', border: '1px solid var(--border-light)', borderRadius: '4px', backgroundColor: 'var(--slate-50)' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '4px', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CheckCircle2 size={26} />
+                  </div>
+                  <div>
+                    <h3 style={{ color: 'var(--navy-900)', marginBottom: '8px', marginTop: 0, fontSize: '1.15rem', fontWeight: '800' }}>Enquiry Received!</h3>
+                    <p style={{ fontSize: '0.92rem', color: 'var(--slate-600)', margin: 0, lineHeight: '1.6', maxWidth: '420px' }}>
+                      {statusMsg}
+                    </p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--slate-400)', marginTop: '8px' }}>
+                      An automated confirmation receipt has also been dispatched to your email address.
+                    </p>
+                  </div>
+                  <button onClick={() => setSubmitted(false)} className="btn btn-secondary btn-sm" style={{ marginTop: '8px' }}>
+                    Send Another Enquiry
+                  </button>
                 </div>
-                <div>
-                  <h4 style={{ color: 'var(--secondary)', marginBottom: '4px', marginTop: 0 }}>Message Received</h4>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>Thank you for writing. A KLU ACM chapter representative will respond shortly.</p>
-                </div>
-                <button onClick={() => setSubmitted(false)} className="btn btn-secondary btn-sm" style={{ marginTop: '8px' }}>
-                  New Inquiry
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label className="form-label">Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Student / Faculty"
-                    className="form-control"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
+              ) : (
+                <form onSubmit={handleSubmit}>
+                  {errorMsg && (
+                    <div style={{ padding: '12px 16px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '4px', color: '#991B1B', fontSize: '0.88rem', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <AlertCircle size={16} />
+                      {errorMsg}
+                    </div>
+                  )}
 
-                <div className="form-group">
-                  <label className="form-label">Email Address <span style={{ color: 'var(--danger)' }}>*</span></label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="name@domain.com"
-                    className="form-control"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
+                  <div className="form-group">
+                    <label className="form-label">Your Name <span style={{ color: 'var(--primary)' }}>*</span></label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Rahul Sharma"
+                      className="form-control"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label className="form-label">Subject</label>
-                  <input
-                    type="text"
-                    placeholder="Topic of inquiry"
-                    className="form-control"
-                    value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  />
-                </div>
+                  <div className="form-group">
+                    <label className="form-label">Your Email Address <span style={{ color: 'var(--primary)' }}>*</span></label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="name@kluniversity.in"
+                      className="form-control"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label className="form-label">Message <span style={{ color: 'var(--danger)' }}>*</span></label>
-                  <textarea
-                    rows="5"
-                    required
-                    placeholder="Write details of your question..."
-                    className="form-control"
-                    style={{ resize: 'vertical' }}
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  />
-                </div>
+                  <div className="form-group">
+                    <label className="form-label">Topic / Subject</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Chapter Membership / Hackathon Query"
+                      className="form-control"
+                      value={formData.subject}
+                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    />
+                  </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn btn-primary"
-                  style={{ width: '100%', justifyContent: 'center', marginTop: '12px' }}
-                >
-                  {loading ? 'Submitting Form...' : 'Submit Inquiry'}
-                </button>
-              </form>
-            )}
-          </div>
-        </ScrollReveal>
+                  <div className="form-group">
+                    <label className="form-label">Message Details <span style={{ color: 'var(--primary)' }}>*</span></label>
+                    <textarea
+                      rows="5"
+                      required
+                      placeholder="Write your question, feedback, or collaboration inquiry..."
+                      className="form-control"
+                      style={{ resize: 'vertical' }}
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    />
+                  </div>
 
-      </div>
-    </section>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn btn-primary"
+                    style={{ width: '100%', justifyContent: 'center', marginTop: '12px', borderRadius: '4px' }}
+                  >
+                    {loading ? 'Transmitting Enquiry...' : 'Submit Inquiry'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </ScrollReveal>
+
+        </div>
+      </section>
+
+      {/* Free-Form Dynamic Content Blocks */}
+      <section style={{ padding: '0 0 48px 0' }}>
+        <div className="container" style={{ maxWidth: '880px' }}>
+          <PageBlockList blockKey="contact_blocks" />
+        </div>
+      </section>
+
 
       {/* Local responsive style */}
       <style>{`

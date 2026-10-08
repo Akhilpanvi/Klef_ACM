@@ -1,2 +1,3 @@
-/KLEF-ACM-SC/*  /KLEF-ACM-SC/index.html  200
 /api/*          /.netlify/functions/:splat  200
+/KLEF-ACM-SC/*  /KLEF-ACM-SC/index.html     200
+/*              /index.html                 200

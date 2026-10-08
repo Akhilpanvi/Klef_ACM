@@ -1,11 +1,18 @@
 import { supabase } from './utils/db.js';
 
+let netlifyCache = {
+  data: null,
+  timestamp: 0,
+  ttl: 30000 // 30s
+};
+
 export async function handler(event, context) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Content-Type': 'application/json',
+    'Cache-Control': 'public, max-age=15, stale-while-revalidate=60',
   };
 
   if (event.httpMethod === 'OPTIONS') {
@@ -25,6 +32,15 @@ export async function handler(event, context) {
 
   try {
     if (type === 'all') {
+      const now = Date.now();
+      if (netlifyCache.data && (now - netlifyCache.timestamp < netlifyCache.ttl)) {
+        return {
+          statusCode: 200,
+          headers: { ...headers, 'X-Cache': 'HIT' },
+          body: JSON.stringify(netlifyCache.data),
+        };
+      }
+
       // Parallel fetches for optimum speed
       const [eventsRes, membersRes, pagesRes, galleryRes, contactRes] = await Promise.all([
         supabase
@@ -42,7 +58,7 @@ export async function handler(event, context) {
           .select('slug, title, content'),
         supabase
           .from('gallery_images')
-          .select('*, gallery_albums(name, description)')
+          .select('*')
           .order('created_at', { ascending: false }),
         supabase
           .from('contact_settings')
@@ -59,20 +75,25 @@ export async function handler(event, context) {
 
       // Group pages into a key-value object
       const pages = {};
-      pagesRes.data.forEach(p => {
+      (pagesRes.data || []).forEach(p => {
         pages[p.slug] = { title: p.title, content: p.content };
       });
 
+      const payload = {
+        events: eventsRes.data || [],
+        members: membersRes.data || [],
+        pages,
+        gallery: galleryRes.data || [],
+        contact: contactRes.data?.value || {},
+      };
+
+      netlifyCache.data = payload;
+      netlifyCache.timestamp = now;
+
       return {
         statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          events: eventsRes.data,
-          members: membersRes.data,
-          pages,
-          gallery: galleryRes.data,
-          contact: contactRes.data?.value || {},
-        }),
+        headers: { ...headers, 'X-Cache': 'MISS' },
+        body: JSON.stringify(payload),
       };
     }
 
