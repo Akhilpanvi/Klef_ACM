@@ -918,7 +918,7 @@ h4 { font-family: var(--font-sans); font-weight: 600; color: inherit; }
 .domain-card .art { position: absolute; right: -40px; top: -40px; width: 240px; height: 240px; border-radius: 50%; opacity: .5; filter: blur(40px); }
 
 /* ---------- EVENTS pill zoom ---------- */
-.events-pin { position: relative; height: 260vh; }
+.events-pin { position: relative; height: 210vh; }
 .events-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; display: grid; place-items: center; background-color: var(--kl-red);
   background-image: linear-gradient(rgba(17, 18, 20, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(17, 18, 20, 0.22) 1px, transparent 1px); background-size: 84px 84px; }
 .events-pill { background: var(--night); color: #fff; border-radius: 999px; outline: 2px solid var(--night); outline-offset: 6px; padding: 26px 18px; display: flex; flex-direction: column; align-items: center; font-weight: 800; font-size: clamp(3rem, 7vw, 6rem); line-height: .86; letter-spacing: -0.02em; will-change: transform; }
@@ -1141,3 +1141,31 @@ body:has(.theme-dark) { background: #0C0D0F; color-scheme: dark; }
 /* CMS rich text can carry inline light highlights/colours from the old theme */
 .theme-dark .page-hero p span, .theme-dark .page-hero p font { background: transparent !important; color: inherit !important; }
 .theme-dark .safe-img-fallback, .theme-dark [class*="fallback"] { background: #141518; }
+
+/* ---------- Home events: animated rows ---------- */
+.events-hint { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); color: var(--night); letter-spacing: .2em; text-transform: uppercase; animation: hintBob 1.6s ease-in-out infinite; }
+@keyframes hintBob { 50% { translate: 0 6px; } }
+.events-pill span { display: block; }
+.ev-row { position: relative; display: grid; grid-template-columns: 300px 1fr auto; gap: 32px; align-items: center; padding: 30px 0; isolation: isolate; color: inherit; }
+.ev-row::before { content: ''; position: absolute; inset: 0 -24px; z-index: -1; border-radius: 18px; background: linear-gradient(90deg, rgba(211, 42, 56, 0.18), rgba(0, 147, 211, 0.08) 60%, transparent); transform: scaleX(0); transform-origin: left; transition: transform .6s var(--ease-editorial); }
+.ev-row:hover::before { transform: scaleX(1); }
+.ev-line { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, #FF5A62, rgba(255, 255, 255, 0.15) 40%); transform-origin: left; }
+.ev-art-wrap { perspective: 800px; }
+.ev-art-wrap .event-art { transform-style: preserve-3d; box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.8); }
+.ev-shine { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%); transform: translateX(-120%); transition: transform .9s var(--ease-editorial); pointer-events: none; }
+.ev-row:hover .ev-shine { transform: translateX(120%); }
+.ev-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 12px; }
+.ev-badge { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.2); color: #EDEDEA; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; }
+.ev-badge i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-2); }
+.ev-badge.live { border-color: rgba(255, 90, 98, 0.5); color: #FF8A90; }
+.ev-badge.live i { background: #FF5A62; box-shadow: 0 0 0 0 rgba(255, 90, 98, 0.7); animation: livePulse 1.6s ease-out infinite; }
+@keyframes livePulse { to { box-shadow: 0 0 0 10px rgba(255, 90, 98, 0); } }
+.ev-title { color: #fff; font-size: clamp(1.4rem, 2.8vw, 2.4rem); line-height: 1.05; text-transform: uppercase; letter-spacing: -0.035em; transition: color .3s ease; }
+.ev-row:hover .ev-title { color: #FF5A62; }
+.ev-cta { color: #fff; }
+.ev-arrow { display: inline-block; transition: transform .3s ease; }
+.ev-row:hover .ev-arrow { transform: translateX(5px); }
+.ev-row:hover .ev-cta { background: var(--kl-red); border-color: var(--kl-red); }
+@media (max-width: 800px) { .ev-row { grid-template-columns: 1fr; gap: 18px; } .ev-row::before { inset: 0 -12px; } }
+@media (prefers-reduced-motion: reduce) { .events-hint, .ev-badge.live i { animation: none; } .ev-row::before, .ev-shine { transition: none; } }
+.events-fade { position: absolute; inset: 0; background: var(--night); opacity: 0; pointer-events: none; }

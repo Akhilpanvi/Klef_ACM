@@ -73,6 +73,62 @@ function Cassette({ label, color = '#D32A38' }) {
   );
 }
 
+const daysUntil = (d) => Math.ceil((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000);
+
+// One event: wipes in, line draws, date flips, title rises; art tilts toward the cursor on hover
+function EventRow({ e, i }) {
+  const d = new Date(e.date);
+  const days = daysUntil(e.date);
+  const upcoming = days >= 0;
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const tiltX = useSpring(rx, { stiffness: 150, damping: 15 });
+  const tiltY = useSpring(ry, { stiffness: 150, damping: 15 });
+  const onMove = (ev) => {
+    const r = ev.currentTarget.getBoundingClientRect();
+    ry.set(((ev.clientX - r.left) / r.width - 0.5) * 18);
+    rx.set(-((ev.clientY - r.top) / r.height - 0.5) * 14);
+  };
+  const reset = () => { rx.set(0); ry.set(0); };
+  const show = { hide: {}, show: {} };
+
+  return (
+    <motion.div initial="hide" whileInView="show" viewport={{ once: true, amount: 0.35 }} variants={show} transition={{ staggerChildren: 0.09, delayChildren: i * 0.08 }}>
+      <Link to="/Events" className="ev-row">
+        <motion.span className="ev-line" variants={{ hide: { scaleX: 0 }, show: { scaleX: 1, transition: { duration: 1.1, ease } } }} />
+        <motion.div
+          className="ev-art-wrap"
+          variants={{ hide: { clipPath: 'inset(0 100% 0 0)' }, show: { clipPath: 'inset(0 0% 0 0)', transition: { duration: 0.9, ease } } }}
+          onMouseMove={onMove}
+          onMouseLeave={reset}
+        >
+          <motion.div className="event-art" style={{ rotateX: tiltX, rotateY: tiltY }}>
+            {e.image_url
+              ? <SafeImage src={e.image_url} alt={e.title} fit="cover" />
+              : (
+                <motion.div className="d" variants={{ hide: { rotateX: 90, opacity: 0 }, show: { rotateX: 0, opacity: 1, transition: { duration: 0.8, ease, delay: 0.3 } } }}>
+                  {d.getDate()}<small>{d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase()}</small>
+                </motion.div>
+              )}
+            <span className="ev-shine" />
+          </motion.div>
+        </motion.div>
+        <div style={{ minWidth: 0 }}>
+          <motion.div className="mono ev-meta" variants={{ hide: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
+            <span className={`ev-badge${upcoming ? ' live' : ''}`}><i />{upcoming ? (days === 0 ? 'Today' : `Upcoming · in ${days} day${days === 1 ? '' : 's'}`) : 'Past event'}</span>
+            <span>{d.toLocaleDateString('en-US', { dateStyle: 'medium' })}{e.venue ? ` · ${e.venue}` : ''}</span>
+          </motion.div>
+          <h3 className="ev-title">
+            <span className="mask"><motion.span variants={{ hide: { y: '110%' }, show: { y: 0, transition: { duration: 0.9, ease } } }}>{e.title}</motion.span></span>
+          </h3>
+          {e.speaker && <motion.div className="mono" style={{ marginTop: '10px' }} variants={{ hide: { opacity: 0 }, show: { opacity: 1 } }}>with {e.speaker}</motion.div>}
+        </div>
+        <motion.span className="pill-btn ghost ev-cta" variants={{ hide: { opacity: 0, x: 20 }, show: { opacity: 1, x: 0 } }}>Details <span className="ev-arrow">→</span></motion.span>
+      </Link>
+    </motion.div>
+  );
+}
+
 export default function Home() {
   const { siteData } = useContext(SiteDataContext);
   const reduce = useReducedMotion();
@@ -125,7 +181,16 @@ export default function Home() {
   // --- Events: pill zooms until it fills the screen
   const evRef = useRef(null);
   const { scrollYProgress: evP } = useScroll({ target: evRef, offset: ['start start', 'end end'] });
-  const pillScale = useTransform(evP, [0.1, 0.9], [1, 16]);
+  const pillScale = useTransform(evP, [0.12, 0.88], [1, 14]);
+  // Set from a JS listener on purpose: values derived straight from useScroll can be handed to a
+  // native ScrollTimeline, which resets them once you scroll past the end of the range.
+  const evFade = useMotionValue(0);
+  const hintOpacity = useMotionValue(1);
+  useMotionValueEvent(evP, 'change', v => {
+    evFade.set(Math.min(1, Math.max(0, (v - 0.5) / 0.25)));
+    hintOpacity.set(Math.min(1, Math.max(0, 1 - (v - 0.15) / 0.2)));
+  });
+  const gridShift = useTransform(evP, [0, 1], ['0px 0px', '0px -420px']);
 
   useEffect(() => { document.body.classList.add('home-page'); return () => document.body.classList.remove('home-page'); }, []);
 
@@ -261,39 +326,25 @@ export default function Home() {
 
       {/* ================= EVENTS: pill zoom ================= */}
       <section ref={evRef} className="events-pin" style={reduce ? { height: 'auto' } : undefined}>
-        <div className="events-stage" style={reduce ? { position: 'relative', height: '70vh' } : undefined}>
-          <motion.div className="events-pill" style={{ scale: reduce ? 1 : pillScale }} aria-label="Events">
-            {'EVENTS'.split('').map((c, i) => <span key={i}>{c}</span>)}
+        <motion.div className="events-stage" style={reduce ? { position: 'relative', height: '70vh' } : { backgroundPosition: gridShift }}>
+          <motion.div className="events-pill" style={{ scale: reduce ? 1 : pillScale, willChange: 'auto' /* re-raster each frame so zoomed text stays sharp */ }} aria-label="Events"
+            initial="hide" whileInView="show" viewport={{ once: true, amount: 0.6 }} transition={{ staggerChildren: 0.07 }}>
+            {'EVENTS'.split('').map((c, i) => (
+              <motion.span key={i} variants={{ hide: { y: -40, opacity: 0, rotate: -12 }, show: { y: 0, opacity: 1, rotate: 0, transition: { type: 'spring', stiffness: 260, damping: 16 } } }}>{c}</motion.span>
+            ))}
           </motion.div>
-        </div>
+          {!reduce && <motion.span className="events-hint mono" style={{ opacity: hintOpacity }}>Scroll ↓</motion.span>}
+          {!reduce && <motion.div className="events-fade" style={{ opacity: evFade }} />}
+        </motion.div>
       </section>
-      <section className="dark" style={{ padding: '40px 0 clamp(80px, 10vw, 140px)' }}>
+      <section className="dark" style={{ padding: '40px 0 clamp(80px, 10vw, 140px)', ...(reduce ? {} : { marginTop: '-38vh', position: 'relative', zIndex: 1, background: 'transparent' }) }}>
         <div className="container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap', marginBottom: '20px' }}>
             <h2 className="display-title" style={{ color: '#fff' }}><Line>Beyond the</Line><Line delay={0.08}><span style={{ color: '#FF5A62' }}>classroom</span></Line></h2>
             <Link to="/Events" className="pill-btn">All events →</Link>
           </div>
           {events.length === 0 && <p className="mono" style={{ padding: '40px 0' }}>Our first events are on the way. Stay tuned.</p>}
-          {events.slice(0, 4).map((e, i) => {
-            const d = new Date(e.date);
-            return (
-              <Fade key={e.id} delay={i * 0.06}>
-                <Link to="/Events" className="event-row">
-                  <div className="event-art">
-                    {e.image_url
-                      ? <SafeImage src={e.image_url} alt={e.title} fit="cover" />
-                      : <div className="d">{d.getDate()}<small>{d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase()}</small></div>}
-                  </div>
-                  <div>
-                    <div className="mono" style={{ marginBottom: '8px' }}>{d.toLocaleDateString('en-US', { dateStyle: 'medium' })}{e.venue ? ` · ${e.venue}` : ''}</div>
-                    <h3 style={{ color: '#fff', fontSize: 'clamp(1.3rem, 2.4vw, 2rem)', lineHeight: 1.1, textTransform: 'uppercase', letterSpacing: '-0.03em' }}>{e.title}</h3>
-                    {e.speaker && <div className="mono" style={{ marginTop: '8px' }}>with {e.speaker}</div>}
-                  </div>
-                  <span className="pill-btn ghost" style={{ color: '#fff' }}>Details →</span>
-                </Link>
-              </Fade>
-            );
-          })}
+          {events.slice(0, 4).map((e, i) => <EventRow key={e.id} e={e} i={i} />)}
         </div>
       </section>
 
