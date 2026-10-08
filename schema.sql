@@ -260,7 +260,7 @@ INSERT INTO pages (slug, title, content) VALUES (
         "hero": {
             "title": "Empowering Future Computing Professionals",
             "subtitle": "KLEF ACM Student Chapter at KL Deemed to be University",
-            "description": "Welcome to the official portal of the KLEF Association for Computing Machinery Student Chapter. We foster a community of passionate student developers, researchers, and innovators driving the future of computer science.",
+            "description": "A community of students and faculty at KL University advancing computing through workshops, research, hackathons and competitive programming.",
             "cta_events": "Explore Events",
             "cta_members": "Meet Our Team"
         },

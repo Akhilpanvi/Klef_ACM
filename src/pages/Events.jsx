@@ -434,7 +434,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
   };
 
   return (
-    <div style={{ backgroundColor: '#FCFCFD', minHeight: '80vh', paddingBottom: '88px' }}>
+    <div style={{ backgroundColor: 'transparent', minHeight: '80vh', paddingBottom: '88px' }}>
       {/* =======================================================================
           VIEW 1: DEDICATED FULL-PAGE EVENT DETAILS VIEW (/Events/:eventName/:date)
           ======================================================================= */}
@@ -632,7 +632,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                   fontWeight: '900',
                   color: 'var(--navy-900)',
                   lineHeight: '1.25',
-                  letterSpacing: '-0.025em',
+                  letterSpacing: '0',
                   marginBottom: '24px'
                 }}
               >
@@ -654,7 +654,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
               >
                 {/* Date & Time */}
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                  <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#005CA9' }}>
+                  <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#0077B6' }}>
                     <Calendar size={20} />
                   </div>
                   <div>
@@ -670,7 +670,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
 
                 {/* Location / Venue */}
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                  <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#005CA9' }}>
+                  <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#0077B6' }}>
                     <MapPin size={20} />
                   </div>
                   <div>
@@ -687,7 +687,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                 {/* Speaker (if available) */}
                 {selectedEvent.speaker && (
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#005CA9' }}>
+                    <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#0077B6' }}>
                       <User size={20} />
                     </div>
                     <div>
@@ -753,7 +753,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '8px',
-                      boxShadow: '0 4px 14px rgba(0, 92, 169, 0.25)'
+                      boxShadow: '0 4px 14px rgba(0, 119, 182, 0.25)'
                     }}
                   >
                     <span>Register For This Event</span>
@@ -770,7 +770,9 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
             ======================================================================= */
         <>
           {/* Editorial Header */}
-          <section style={{ backgroundColor: '#FFFFFF', padding: '72px 0', borderBottom: '1px solid var(--border-light)' }}>
+          <section className="page-hero bg-mesh">
+        <div className="orb orb-red" />
+        <div className="orb orb-blue" />
             <div className="container">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px' }}>
                 <div style={{ maxWidth: '740px' }}>
@@ -784,7 +786,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                     name="events_title"
                     as="h1"
                     defaultValue="Chapter Activities & Events"
-                    style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '-0.025em', marginBottom: '12px', lineHeight: '1.2' }}
+                    style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '0', marginBottom: '12px', lineHeight: '1.2' }}
                   />
                   <VisualEditable
                     name="events_subtitle"
@@ -971,7 +973,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                           style={{
                             backgroundColor: '#FFFFFF',
                             borderRadius: '12px',
-                            border: dragOverIdx === idx && draggedIdx !== idx ? '2px dashed #005CA9' : '1px solid var(--border-light)',
+                            border: dragOverIdx === idx && draggedIdx !== idx ? '2px dashed #0077B6' : '1px solid var(--border-light)',
                             overflow: 'hidden',
                             display: 'flex',
                             flexDirection: 'column',
@@ -980,7 +982,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                             cursor: isVisualAdmin ? (draggedIdx === idx ? 'grabbing' : 'grab') : 'pointer',
                             opacity: draggedIdx === idx ? 0.35 : 1,
                             transform: dragOverIdx === idx && draggedIdx !== idx ? 'scale(1.02)' : 'none',
-                            boxShadow: dragOverIdx === idx && draggedIdx !== idx ? '0 16px 36px rgba(0, 92, 169, 0.2)' : '0 4px 18px rgba(0,0,0,0.04)',
+                            boxShadow: dragOverIdx === idx && draggedIdx !== idx ? '0 16px 36px rgba(0, 119, 182, 0.2)' : '0 4px 18px rgba(0,0,0,0.04)',
                             transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease',
                           }}
                           onClick={() => {
@@ -991,8 +993,8 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                           onMouseEnter={(e) => {
                             if (!isVisualAdmin) {
                               e.currentTarget.style.transform = 'translateY(-4px)';
-                              e.currentTarget.style.boxShadow = '0 12px 28px rgba(0, 92, 169, 0.08)';
-                              e.currentTarget.style.borderColor = '#005CA9';
+                              e.currentTarget.style.boxShadow = '0 12px 28px rgba(0, 119, 182, 0.08)';
+                              e.currentTarget.style.borderColor = '#0077B6';
                             }
                           }}
                           onMouseLeave={(e) => {
@@ -1157,7 +1159,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                                     padding: '6px 8px',
                                     borderRadius: '6px',
                                     backgroundColor: '#0F172A',
-                                    color: '#38BDF8',
+                                    color: '#5BBAE4',
                                     border: '1px solid rgba(255,255,255,0.2)',
                                     cursor: 'pointer',
                                     display: 'flex',
@@ -1455,7 +1457,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                   type="submit"
                   disabled={isSubmitting}
                   className="btn btn-primary"
-                  style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '800', backgroundColor: '#005CA9', borderColor: '#005CA9' }}
+                  style={{ padding: '10px 24px', borderRadius: '8px', fontWeight: '800', backgroundColor: '#0077B6', borderColor: '#0077B6' }}
                 >
                   {isSubmitting ? 'Saving to Database...' : editingEvent ? 'Update Event' : 'Create Event'}
                 </button>

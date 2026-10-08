@@ -283,7 +283,7 @@ export default function InteractiveEntrance({ onEnter }) {
             style={{
               fontSize: 'clamp(42px, 7vw, 84px)',
               fontWeight: '900',
-              letterSpacing: '-0.04em',
+              letterSpacing: '0',
               color: '#ffffff',
               lineHeight: 1.05,
               marginBottom: '16px',

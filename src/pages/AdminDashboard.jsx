@@ -150,7 +150,7 @@ export default function AdminDashboard() {
           <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#0085CA', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '6px' }}>
             Content Management Overview
           </span>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0f172a', margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0f172a', margin: '0 0 6px 0', letterSpacing: '0' }}>
             Welcome to KLEF ACM Chapter CMS
           </h1>
           <p style={{ color: '#64748b', fontSize: '0.92rem', margin: 0, maxWidth: '650px', lineHeight: '1.5' }}>

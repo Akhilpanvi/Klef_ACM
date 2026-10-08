@@ -55,9 +55,11 @@ Andhra Pradesh, India – 522302`;
 
 
   return (
-    <div style={{ backgroundColor: '#FCFCFD', minHeight: '80vh', paddingBottom: '88px' }}>
+    <div style={{ backgroundColor: 'transparent', minHeight: '80vh', paddingBottom: '88px' }}>
       {/* Page Header */}
-      <section style={{ backgroundColor: '#FFFFFF', padding: '72px 0', borderBottom: '1px solid var(--border-light)' }}>
+      <section className="page-hero bg-mesh">
+        <div className="orb orb-red" />
+        <div className="orb orb-blue" />
         <div className="container">
           <VisualEditable
             name="contact_tag"
@@ -69,7 +71,7 @@ Andhra Pradesh, India – 522302`;
             name="contact_title"
             as="h1"
             defaultValue="CONTACT KLEF ACM"
-            style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '-0.025em', marginBottom: '12px', lineHeight: '1.2' }}
+            style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '0', marginBottom: '12px', lineHeight: '1.2' }}
           />
           <VisualEditable
             name="contact_subtitle"

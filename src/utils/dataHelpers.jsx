@@ -431,51 +431,8 @@ export function parseGalleryItem(item) {
 }
 
 // 36 Curated Member Background Colors (4 Harmonious Sets)
-export const cardColors = [
-  // Vibrant Set
-  "#BB3484", // Magenta
-  "#D14142", // Red
-  "#E88D37", // Orange
-  "#FAE228", // Yellow
-  "#A8CA3D", // Lime
-  "#249846", // Green
-  "#029F9E", // Turquoise/Cyan
-  "#1476B2", // Blue
-  "#5F4A86", // Violet/Purple
-
-  // Soft / Pastel Set
-  "#E6A4CF", // Magenta
-  "#F8B4B2", // Red
-  "#FFCFA0", // Orange
-  "#FDF7A0", // Yellow
-  "#C7E89B", // Lime
-  "#A8D7A9", // Green
-  "#95D3D2", // Turquoise/Cyan
-  "#94CAEA", // Blue
-  "#BCA7D0", // Violet/Purple
-
-  // Deep / Rich Set
-  "#68274D", // Magenta
-  "#7D292A", // Red
-  "#885232", // Orange
-  "#8A762B", // Yellow
-  "#617030", // Lime
-  "#2B5E38", // Green
-  "#195D64", // Turquoise/Cyan
-  "#2C4765", // Blue
-  "#473A5F", // Violet/Purple
-
-  // Muted / Earthy Set
-  "#9E718B", // Magenta
-  "#B27C7A", // Red
-  "#BC906A", // Orange
-  "#BFAB6D", // Yellow
-  "#95A270", // Lime
-  "#759676", // Green
-  "#598C8B", // Turquoise/Cyan
-  "#607696", // Blue
-  "#827492"  // Violet/Purple
-];
+// ponytail: brand-only palette (KL red / ACM blue, sampled from public/brand logo)
+export const cardColors = ['#D32A38', '#0093D3', '#A8202A', '#0077B6'];
 
 export function generateCardPalettes(hexList) {
   return hexList.map(hex => {

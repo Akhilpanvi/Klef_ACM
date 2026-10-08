@@ -179,7 +179,7 @@ export default function PageBlockList({ blockKey = 'blocks', slug: propSlug, cla
                   borderRadius: '20px',
                   backgroundColor: '#f1f5f9',
                   border: '1px dashed #94a3b8',
-                  color: '#005CA9',
+                  color: '#0077B6',
                   fontSize: '0.78rem',
                   fontWeight: '700',
                   cursor: 'pointer',
@@ -200,7 +200,7 @@ export default function PageBlockList({ blockKey = 'blocks', slug: propSlug, cla
               position: 'relative',
               margin: '24px 0',
               padding: isEditMode ? '16px' : '0',
-              border: isEditMode ? '1.5px dashed rgba(0, 92, 169, 0.25)' : 'none',
+              border: isEditMode ? '1.5px dashed rgba(0, 119, 182, 0.25)' : 'none',
               borderRadius: isEditMode ? '10px' : '0',
               backgroundColor: isEditMode ? 'rgba(248, 250, 252, 0.5)' : 'transparent',
               transition: 'border-color 0.2s ease',
@@ -248,7 +248,7 @@ export default function PageBlockList({ blockKey = 'blocks', slug: propSlug, cla
                   type="button"
                   title="Duplicate Block"
                   onClick={(e) => handleDuplicateBlock(block.id, e)}
-                  style={{ background: 'none', border: 'none', color: '#38bdf8', cursor: 'pointer', padding: '2px' }}
+                  style={{ background: 'none', border: 'none', color: '#5BBAE4', cursor: 'pointer', padding: '2px' }}
                 >
                   <Copy size={13} />
                 </button>
@@ -281,13 +281,13 @@ export default function PageBlockList({ blockKey = 'blocks', slug: propSlug, cla
               gap: '8px',
               padding: '12px 24px',
               borderRadius: '10px',
-              backgroundColor: '#005CA9',
+              backgroundColor: '#0077B6',
               color: '#ffffff',
               border: 'none',
               fontSize: '0.92rem',
               fontWeight: '800',
               cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(0, 92, 169, 0.25)',
+              boxShadow: '0 4px 14px rgba(0, 119, 182, 0.25)',
               transition: 'all 0.2s ease',
             }}
           >
@@ -344,7 +344,7 @@ export default function PageBlockList({ blockKey = 'blocks', slug: propSlug, cla
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
               {[
-                { type: 'heading', title: 'Heading', desc: 'H2/H3 Section Title', icon: HeadingIcon, color: '#005CA9' },
+                { type: 'heading', title: 'Heading', desc: 'H2/H3 Section Title', icon: HeadingIcon, color: '#0077B6' },
                 { type: 'text', title: 'Rich Text', desc: 'Paragraph or formatted text', icon: Type, color: '#0284c7' },
                 { type: 'image', title: 'Image', desc: 'Upload or link photograph', icon: ImageIcon, color: '#059669' },
                 { type: 'two_column', title: 'Two Columns', desc: 'Side-by-side content pillars', icon: Columns, color: '#7c3aed' },
@@ -418,7 +418,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
                 color: '#0f172a',
                 letterSpacing: '-0.02em',
                 margin: 0,
-                outline: '1.5px dashed rgba(0, 163, 224, 0.4)',
+                outline: '1.5px dashed rgba(0, 147, 211, 0.4)',
                 padding: '4px 8px',
                 borderRadius: '4px',
               }}
@@ -446,7 +446,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
                 color: '#475569',
                 fontSize: '1.05rem',
                 lineHeight: '1.8',
-                outline: '1.5px dashed rgba(0, 163, 224, 0.4)',
+                outline: '1.5px dashed rgba(0, 147, 211, 0.4)',
                 padding: '8px',
                 borderRadius: '4px',
                 minHeight: '2em',
@@ -477,7 +477,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
               contentEditable
               suppressContentEditableWarning
               onBlur={(e) => onUpdate('caption', e.currentTarget.innerText)}
-              style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '8px', fontStyle: 'italic', outline: '1px dashed rgba(0,163,224,0.3)', padding: '2px 6px' }}
+              style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '8px', fontStyle: 'italic', outline: '1px dashed rgba(0, 147, 211,0.3)', padding: '2px 6px' }}
             >
               {data.caption || 'Add photo caption...'}
             </p>
@@ -491,7 +491,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
       return (
         <blockquote
           style={{
-            borderLeft: '4px solid #005CA9',
+            borderLeft: '4px solid #0077B6',
             backgroundColor: '#f8fafc',
             padding: '24px 28px',
             borderRadius: '0 12px 12px 0',
@@ -503,7 +503,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
               contentEditable
               suppressContentEditableWarning
               onBlur={(e) => onUpdate('quote', e.currentTarget.innerText)}
-              style={{ fontSize: '1.15rem', fontStyle: 'italic', color: '#1e293b', lineHeight: '1.6', margin: '0 0 10px 0', outline: '1px dashed rgba(0,163,224,0.4)', padding: '4px' }}
+              style={{ fontSize: '1.15rem', fontStyle: 'italic', color: '#1e293b', lineHeight: '1.6', margin: '0 0 10px 0', outline: '1px dashed rgba(0, 147, 211,0.4)', padding: '4px' }}
             >
               {data.quote || 'Quote text...'}
             </p>
@@ -517,12 +517,12 @@ function renderBlockContent(block, isEditMode, onUpdate) {
               contentEditable
               suppressContentEditableWarning
               onBlur={(e) => onUpdate('author', e.currentTarget.innerText)}
-              style={{ fontSize: '0.85rem', fontWeight: '700', color: '#005CA9', display: 'block', outline: '1px dashed rgba(0,163,224,0.3)', padding: '2px' }}
+              style={{ fontSize: '0.85rem', fontWeight: '700', color: '#0077B6', display: 'block', outline: '1px dashed rgba(0, 147, 211,0.3)', padding: '2px' }}
             >
               — {data.author || 'Author Name'}
             </cite>
           ) : (
-            data.author && <cite style={{ fontSize: '0.85rem', fontWeight: '700', color: '#005CA9', display: 'block' }}>— {data.author}</cite>
+            data.author && <cite style={{ fontSize: '0.85rem', fontWeight: '700', color: '#0077B6', display: 'block' }}>— {data.author}</cite>
           )}
         </blockquote>
       );
@@ -537,7 +537,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
                   contentEditable
                   suppressContentEditableWarning
                   onBlur={(e) => onUpdate('col1_title', e.currentTarget.innerText)}
-                  style={{ fontSize: '1.2rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px', outline: '1px dashed rgba(0,163,224,0.3)' }}
+                  style={{ fontSize: '1.2rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px', outline: '1px dashed rgba(0, 147, 211,0.3)' }}
                 >
                   {data.col1_title || 'Column 1 Title'}
                 </h3>
@@ -546,7 +546,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
                   suppressContentEditableWarning
                   onBlur={(e) => onUpdate('col1_text', e.currentTarget.innerHTML)}
                   dangerouslySetInnerHTML={{ __html: data.col1_text || 'Column 1 content description' }}
-                  style={{ color: '#475569', fontSize: '0.95rem', lineHeight: '1.7', outline: '1px dashed rgba(0,163,224,0.3)' }}
+                  style={{ color: '#475569', fontSize: '0.95rem', lineHeight: '1.7', outline: '1px dashed rgba(0, 147, 211,0.3)' }}
                 />
               </>
             ) : (
@@ -564,7 +564,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
                   contentEditable
                   suppressContentEditableWarning
                   onBlur={(e) => onUpdate('col2_title', e.currentTarget.innerText)}
-                  style={{ fontSize: '1.2rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px', outline: '1px dashed rgba(0,163,224,0.3)' }}
+                  style={{ fontSize: '1.2rem', fontWeight: '800', color: '#0f172a', marginBottom: '8px', outline: '1px dashed rgba(0, 147, 211,0.3)' }}
                 >
                   {data.col2_title || 'Column 2 Title'}
                 </h3>
@@ -573,7 +573,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
                   suppressContentEditableWarning
                   onBlur={(e) => onUpdate('col2_text', e.currentTarget.innerHTML)}
                   dangerouslySetInnerHTML={{ __html: data.col2_text || 'Column 2 content description' }}
-                  style={{ color: '#475569', fontSize: '0.95rem', lineHeight: '1.7', outline: '1px dashed rgba(0,163,224,0.3)' }}
+                  style={{ color: '#475569', fontSize: '0.95rem', lineHeight: '1.7', outline: '1px dashed rgba(0, 147, 211,0.3)' }}
                 />
               </>
             ) : (
@@ -595,7 +595,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
                 contentEditable
                 suppressContentEditableWarning
                 onBlur={(e) => onUpdate('tag', e.currentTarget.innerText)}
-                style={{ fontSize: '0.78rem', fontWeight: '800', color: '#005CA9', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '8px', outline: '1px dashed rgba(0,163,224,0.3)' }}
+                style={{ fontSize: '0.78rem', fontWeight: '800', color: '#0077B6', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '8px', outline: '1px dashed rgba(0, 147, 211,0.3)' }}
               >
                 {data.tag || 'SECTION TAG'}
               </span>
@@ -603,7 +603,7 @@ function renderBlockContent(block, isEditMode, onUpdate) {
                 contentEditable
                 suppressContentEditableWarning
                 onBlur={(e) => onUpdate('title', e.currentTarget.innerText)}
-                style={{ fontSize: '1.6rem', fontWeight: '900', color: '#0f172a', marginBottom: '14px', outline: '1px dashed rgba(0,163,224,0.3)' }}
+                style={{ fontSize: '1.6rem', fontWeight: '900', color: '#0f172a', marginBottom: '14px', outline: '1px dashed rgba(0, 147, 211,0.3)' }}
               >
                 {data.title || 'Initiative Section Title'}
               </h3>
@@ -612,12 +612,12 @@ function renderBlockContent(block, isEditMode, onUpdate) {
                 suppressContentEditableWarning
                 onBlur={(e) => onUpdate('description', e.currentTarget.innerHTML)}
                 dangerouslySetInnerHTML={{ __html: data.description || 'Provide detailed overview...' }}
-                style={{ color: '#475569', fontSize: '1rem', lineHeight: '1.75', outline: '1px dashed rgba(0,163,224,0.3)' }}
+                style={{ color: '#475569', fontSize: '1rem', lineHeight: '1.75', outline: '1px dashed rgba(0, 147, 211,0.3)' }}
               />
             </>
           ) : (
             <>
-              {data.tag && <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#005CA9', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{data.tag}</span>}
+              {data.tag && <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#0077B6', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'block', marginBottom: '8px' }}>{data.tag}</span>}
               <h3 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#0f172a', marginBottom: '14px' }}>{data.title}</h3>
               <div dangerouslySetInnerHTML={{ __html: data.description || '' }} style={{ color: '#475569', fontSize: '1rem', lineHeight: '1.75' }} />
             </>
@@ -636,8 +636,8 @@ function renderBlockContent(block, isEditMode, onUpdate) {
               padding: '12px 24px',
               borderRadius: '8px',
               fontWeight: '800',
-              backgroundColor: '#005CA9',
-              borderColor: '#005CA9',
+              backgroundColor: '#0077B6',
+              borderColor: '#0077B6',
               color: '#ffffff',
               textDecoration: 'none',
             }}

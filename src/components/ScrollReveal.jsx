@@ -279,7 +279,7 @@ export function OversizedText({ text, speed = 0.08, direction = 'left' }) {
       style={{ 
         fontSize: 'clamp(56px, 10vw, 130px)', 
         fontWeight: '900', 
-        letterSpacing: '-0.04em', 
+        letterSpacing: '0', 
         color: 'var(--bg-main)', 
         lineHeight: '0.8',
         whiteSpace: 'nowrap',

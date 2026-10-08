@@ -68,14 +68,16 @@ export default function AboutKlefAcm() {
   ];
 
   return (
-    <div style={{ backgroundColor: '#FCFCFD', minHeight: '80vh', paddingBottom: '88px' }}>
+    <div style={{ backgroundColor: 'transparent', minHeight: '80vh', paddingBottom: '88px' }}>
       {/* Page Title Header */}
-      <section style={{ backgroundColor: '#FFFFFF', padding: '72px 0', borderBottom: '1px solid var(--border-light)' }}>
+      <section className="page-hero bg-mesh">
+        <div className="orb orb-red" />
+        <div className="orb orb-blue" />
         <div className="container">
           <span className="editorial-kicker">
             University Chapter Profile
           </span>
-          <h1 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '-0.025em', marginBottom: '16px' }}>
+          <h1 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '0', marginBottom: '16px' }}>
             <TextReveal text="KLEF ACM Student Chapter" duration={900} />
           </h1>
           <VisualEditable

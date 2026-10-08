@@ -443,10 +443,12 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
   const currentImages = currentEventData?.images || [];
 
   return (
-    <div style={{ backgroundColor: '#FCFCFD', minHeight: '80vh', paddingBottom: '88px' }}>
+    <div style={{ backgroundColor: 'transparent', minHeight: '80vh', paddingBottom: '88px' }}>
       
       {/* Editorial Header */}
-      <section style={{ backgroundColor: '#FFFFFF', padding: '64px 0', borderBottom: '1px solid var(--border-light)' }}>
+      <section className="page-hero bg-mesh">
+        <div className="orb orb-red" />
+        <div className="orb orb-blue" />
         <div className="container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px' }}>
             <div style={{ maxWidth: '760px' }}>
@@ -464,7 +466,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                   fontSize: 'clamp(28px, 4vw, 40px)',
                   fontWeight: '800',
                   color: 'var(--navy-900)',
-                  letterSpacing: '-0.025em',
+                  letterSpacing: '0',
                   marginBottom: '12px',
                   lineHeight: '1.2',
                 }}
@@ -822,7 +824,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                             width: dotIdx === activeSlideIndex ? '18px' : '7px',
                             height: '7px',
                             borderRadius: '4px',
-                            backgroundColor: dotIdx === activeSlideIndex ? '#38BDF8' : 'rgba(255, 255, 255, 0.4)',
+                            backgroundColor: dotIdx === activeSlideIndex ? '#5BBAE4' : 'rgba(255, 255, 255, 0.4)',
                             transition: 'all 0.25s ease',
                             cursor: 'pointer'
                           }}
@@ -881,7 +883,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                       fontWeight: '800',
                       color: 'var(--navy-900)',
                       margin: '0 0 14px 0',
-                      letterSpacing: '-0.02em',
+                      letterSpacing: '0',
                       lineHeight: '1.25'
                     }}
                   >
@@ -983,8 +985,8 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                           style={{
                             backgroundColor: '#FFFFFF',
                             borderRadius: '16px',
-                            border: dragOverIdx === idx && draggedIdx !== idx ? '2px dashed #005CA9' : '1.5px solid var(--border-light)',
-                            boxShadow: dragOverIdx === idx && draggedIdx !== idx ? '0 16px 36px rgba(0, 92, 169, 0.2)' : '0 4px 18px rgba(0, 0, 0, 0.04)',
+                            border: dragOverIdx === idx && draggedIdx !== idx ? '2px dashed #0077B6' : '1.5px solid var(--border-light)',
+                            boxShadow: dragOverIdx === idx && draggedIdx !== idx ? '0 16px 36px rgba(0, 119, 182, 0.2)' : '0 4px 18px rgba(0, 0, 0, 0.04)',
                             overflow: 'hidden',
                             cursor: isVisualAdmin ? (draggedIdx === idx ? 'grabbing' : 'grab') : 'pointer',
                             position: 'relative',
@@ -1004,8 +1006,8 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                           onMouseEnter={(e) => {
                             if (!isVisualAdmin) {
                               e.currentTarget.style.transform = 'translateY(-6px)';
-                              e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 92, 169, 0.12)';
-                              e.currentTarget.style.borderColor = '#005CA9';
+                              e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 119, 182, 0.12)';
+                              e.currentTarget.style.borderColor = '#0077B6';
                             }
                           }}
                           onMouseLeave={(e) => {
@@ -1132,7 +1134,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                                     padding: '6px 8px',
                                     borderRadius: '6px',
                                     backgroundColor: '#0F172A',
-                                    color: '#38BDF8',
+                                    color: '#5BBAE4',
                                     border: '1px solid rgba(255,255,255,0.2)',
                                     cursor: 'pointer',
                                     display: 'flex',
@@ -1293,7 +1295,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                 {zoomedPhoto.title}
               </h4>
               {zoomedPhoto.total > 1 && (
-                <span style={{ color: '#38BDF8', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <span style={{ color: '#5BBAE4', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Photo {zoomedPhoto.index} of {zoomedPhoto.total}
                 </span>
               )}
@@ -1428,7 +1430,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                       gap: '4px',
                       padding: '6px 12px',
                       borderRadius: '6px',
-                      backgroundColor: '#005CA9',
+                      backgroundColor: '#0077B6',
                       color: '#FFFFFF',
                       border: 'none',
                       fontSize: '0.8rem',
@@ -1458,9 +1460,9 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                       width: '100%',
                       padding: '12px',
                       borderRadius: '8px',
-                      border: '1.5px dashed #005CA9',
+                      border: '1.5px dashed #0077B6',
                       backgroundColor: '#F0F9FF',
-                      color: '#005CA9',
+                      color: '#0077B6',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -1492,7 +1494,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                         style={{ 
                           fontSize: '0.74rem', 
                           fontWeight: '800', 
-                          color: idx === 0 ? '#005CA9' : '#64748B', 
+                          color: idx === 0 ? '#0077B6' : '#64748B', 
                           backgroundColor: '#FFFFFF', 
                           border: '1px solid #CBD5E1', 
                           borderRadius: '6px', 
@@ -1580,7 +1582,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                   type="submit"
                   disabled={isSubmitting || isUploadingMulti}
                   className="btn btn-primary"
-                  style={{ padding: '10px 24px', fontWeight: '800', backgroundColor: '#005CA9', borderColor: '#005CA9' }}
+                  style={{ padding: '10px 24px', fontWeight: '800', backgroundColor: '#0077B6', borderColor: '#0077B6' }}
                 >
                   {isSubmitting ? 'Saving Event...' : editingItem ? 'Save Changes' : 'Publish Event'}
                 </button>

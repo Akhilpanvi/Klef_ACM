@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import OpeningIntro from '../components/OpeningIntro';
+import Loader from '../components/Loader';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { SiteDataContext } from '../App';
 
@@ -68,19 +68,10 @@ export default function PublicLayout() {
 
     // Check if on specific member bio/profile detail route
     const isMemberBioPage = /^\/members\/.+/i.test(location.pathname);
-
-    // Check if on home page route
-    const currentCleanPath = location.pathname.toLowerCase().replace(/\/+$/, '');
-    const isHomePage = currentCleanPath === '' || 
-      currentCleanPath === '/' || 
-      currentCleanPath === '/home' || 
-      currentCleanPath === '/klef-acm-sc' || 
-      currentCleanPath === '/klef-acm-sc/home';
-
     return (
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        {/* Grand Opening Intro only on Home page */}
-        {isHomePage && <OpeningIntro />}
+        {/* Loading screen: once per full page load */}
+        <Loader />
 
         {/* Viewport Top Scroll Progress Indicator */}
         <div 

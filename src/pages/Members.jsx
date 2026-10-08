@@ -7,6 +7,7 @@ import {
   User, 
   X, 
   ExternalLink, 
+  ArrowUpRight,
   Plus, 
   Edit3, 
   Trash2, 
@@ -484,9 +485,6 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
   // MEMBER CARD RENDERER (Clean: ONLY Role & Person Name, ONLY LinkedIn on Card)
   // ---------------------------------------------------------------------------
   const renderMemberCard = (member, index) => {
-    // Cycle sequentially through the 27 requested card colors
-    const paletteIndex = index % CARD_PALETTES.length;
-    const palette = CARD_PALETTES[paletteIndex];
     const hasPhoto = Boolean(member.photograph_url);
     const parsed = parseMemberData(member);
     const initials = getInitials(member.name);
@@ -504,217 +502,44 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
         onDragEnd={handleDragEnd}
         style={{ 
           position: 'relative',
-          borderRadius: '16px',
-          border: `1.5px solid ${palette.border}`,
-          backgroundColor: '#FFFFFF',
-          boxShadow: dragOverIdx === index && draggedIdx !== index ? '0 16px 36px rgba(0, 92, 169, 0.25)' : '0 4px 18px rgba(0, 0, 0, 0.04)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
+          boxShadow: dragOverIdx === index && draggedIdx !== index ? '0 16px 36px rgba(0, 119, 182, 0.25)' : undefined,
           cursor: isVisualAdmin ? (draggedIdx === index ? 'grabbing' : 'grab') : 'pointer',
           opacity: draggedIdx === index ? 0.35 : 1,
           transform: dragOverIdx === index && draggedIdx !== index ? 'scale(1.03) translateY(-4px)' : 'none',
-          outline: dragOverIdx === index && draggedIdx !== index ? '3px dashed #005CA9' : 'none',
+          outline: dragOverIdx === index && draggedIdx !== index ? '3px dashed #0077B6' : 'none',
           outlineOffset: '4px',
           transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, opacity 0.2s ease',
-          height: '100%',
         }}
-        className="member-editorial-card"
+        className="mcard"
         onClick={() => {
           if (!isVisualAdmin || draggedIdx === null) {
             selectMember(member);
           }
         }}
-        onMouseEnter={(e) => {
-          if (!isVisualAdmin) {
-            e.currentTarget.style.transform = 'translateY(-6px)';
-            e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 92, 169, 0.12)';
-            e.currentTarget.style.borderColor = palette.accent;
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isVisualAdmin) {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 18px rgba(0, 0, 0, 0.04)';
-            e.currentTarget.style.borderColor = palette.border;
-          }
-        }}
       >
-        {/* Top Pastel Header Area with Centered Profile Photo (Clicking opens person page) */}
-        <div 
-          style={{ 
-            position: 'relative',
-            height: '190px',
-            background: palette.bg,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            borderBottom: `1px solid ${palette.border}`
-          }}
-        >
-          {/* Member Photograph */}
+        {/* Full-bleed photo */}
+        <div className="mcard-media">
           {hasPhoto ? (
-            <div 
-              style={{ 
-                position: 'relative',
-                zIndex: 2,
-                width: '124px', 
-                height: '124px', 
-                borderRadius: '16px', 
-                overflow: 'hidden', 
-                border: '3px solid #FFFFFF', 
-                backgroundColor: '#FFFFFF',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.10)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'transform 0.2s ease',
-              }}
-              title={`View ${member.name}'s Profile`}
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              <SafeImage
-                src={member.photograph_url}
-                alt={member.name}
-                fallbackIcon={User}
-                fallbackText={member.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            </div>
+            <SafeImage src={member.photograph_url} alt={member.name} fit="cover" fallbackIcon={User} fallbackText={member.name} />
           ) : (
-            <div 
-              style={{
-                position: 'relative',
-                zIndex: 2,
-                width: '100px',
-                height: '100px',
-                borderRadius: '16px',
-                backgroundColor: '#FFFFFF',
-                border: `2px solid ${palette.accent}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 6px 18px rgba(0, 0, 0, 0.06)'
-              }}
-            >
-              <span style={{ fontSize: '2.2rem', fontWeight: '900', color: palette.accent, letterSpacing: '-0.02em' }}>
-                {initials}
-              </span>
-            </div>
+            <div className="mcard-initials">{initials}</div>
           )}
         </div>
 
-        {/* Card Body Information - CLEAN: ONLY ROLE & PERSON NAME */}
-        <div style={{ padding: '20px 22px 18px 22px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            {/* Role / Title Kicker */}
-            <div 
-              style={{ 
-                fontSize: '0.72rem', 
-                fontWeight: '800', 
-                color: palette.accent, 
-                textTransform: 'uppercase', 
-                letterSpacing: '0.08em', 
-                marginBottom: '8px',
-                display: 'inline-block',
-                backgroundColor: palette.badgeBg,
-                padding: '3px 10px',
-                borderRadius: '4px'
-              }}
-            >
-              {member.role}
-            </div>
-
-            {/* Member Full Name */}
-            <h3 
-              style={{ 
-                fontSize: '1.22rem', 
-                fontWeight: '800', 
-                color: 'var(--navy-900)', 
-                margin: '0 0 4px 0', 
-                letterSpacing: '-0.02em',
-                lineHeight: '1.25'
-              }}
-            >
-              {member.name}
-            </h3>
+        {/* Glass caption */}
+        <div className="mcard-glass">
+          <div style={{ minWidth: 0 }}>
+            <div className="mcard-role">{member.role}</div>
+            <h3 className="mcard-name">{member.name}</h3>
           </div>
-
-          {/* Bottom Card Strip - ONLY LinkedIn Icon on the Directory Card */}
-          <div 
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              paddingTop: '14px',
-              borderTop: '1px solid var(--border-subtle)',
-              marginTop: '16px'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              {parsed.linkedinUrl ? (
-                <a
-                  href={parsed.linkedinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="LinkedIn Profile"
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '6px',
-                    backgroundColor: 'var(--slate-50)',
-                    border: '1px solid var(--border-light)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#0A66C2',
-                    textDecoration: 'none',
-                    transition: 'all 0.18s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#0A66C2';
-                    e.currentTarget.style.color = '#FFFFFF';
-                    e.currentTarget.style.borderColor = '#0A66C2';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--slate-50)';
-                    e.currentTarget.style.color = '#0A66C2';
-                    e.currentTarget.style.borderColor = 'var(--border-light)';
-                    e.currentTarget.style.transform = 'none';
-                  }}
-                >
-                  <LinkedInIcon size={15} />
-                </a>
-              ) : (
-                <span style={{ fontSize: '0.74rem', color: 'var(--slate-400)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  KLEF ACM
-                </span>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => selectMember(member)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: palette.accent,
-                fontSize: '0.8rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '4px 6px'
-              }}
-            >
-              <span>Profile</span>
-              <span style={{ fontSize: '1rem', lineHeight: '1' }}>→</span>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+            {parsed.linkedinUrl && (
+              <a href={parsed.linkedinUrl} target="_blank" rel="noopener noreferrer" title="LinkedIn Profile" className="mcard-icon">
+                <LinkedInIcon size={15} />
+              </a>
+            )}
+            <button type="button" onClick={() => selectMember(member)} className="mcard-icon" title={`View ${member.name}'s profile`} aria-label={`View ${member.name}'s profile`}>
+              <ArrowUpRight size={16} />
             </button>
           </div>
         </div>
@@ -804,7 +629,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                   padding: '6px 8px',
                   borderRadius: '6px',
                   backgroundColor: '#0F172A',
-                  color: '#38BDF8',
+                  color: '#5BBAE4',
                   border: '1px solid rgba(255,255,255,0.2)',
                   cursor: 'pointer',
                   display: 'flex',
@@ -923,64 +748,25 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
           </div>
         </div>
 
-        {/* Profile Card Main Container */}
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '20px',
-            border: `1.5px solid ${palette.border}`,
-            boxShadow: '0 12px 40px rgba(0, 0, 0, 0.06)',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Header Banner */}
-          <div
-            style={{
-              height: '140px',
-              background: palette.bg,
-              borderBottom: `1px solid ${palette.border}`,
-              position: 'relative'
-            }}
-          />
+        {/* Profile Hero */}
+        <div className="profile-hero bg-mesh" style={{ padding: 'clamp(36px, 6vw, 64px) 24px', textAlign: 'center' }}>
+          <div className="orb orb-red" style={{ width: '360px', height: '360px' }} />
+          <div className="orb orb-blue" style={{ width: '420px', height: '420px' }} />
 
-          {/* Profile Overview Container - FULLY CENTERED */}
-          <div style={{ padding: '0 36px 36px 36px', textAlign: 'center' }}>
-            
-            {/* Centered Large Profile Photograph (Click to Zoom Lightbox) */}
-            <div
-              style={{
-                width: '160px',
-                height: '160px',
-                borderRadius: '24px',
-                overflow: 'hidden',
-                border: '4px solid #FFFFFF',
-                backgroundColor: '#FFFFFF',
-                boxShadow: '0 12px 36px rgba(0, 0, 0, 0.14)',
-                margin: '-80px auto 20px auto',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                cursor: selectedMember.photograph_url ? 'zoom-in' : 'default',
-                transition: 'transform 0.25s ease'
-              }}
-              title={selectedMember.photograph_url ? "Click to expand photo" : selectedMember.name}
-              onClick={() => {
-                if (selectedMember.photograph_url) {
-                  setZoomedImage({
-                    url: selectedMember.photograph_url,
-                    name: selectedMember.name,
-                    role: selectedMember.role
-                  });
-                }
-              }}
-              onMouseEnter={(e) => {
-                if (selectedMember.photograph_url) e.currentTarget.style.transform = 'scale(1.04)';
-              }}
-              onMouseLeave={(e) => {
-                if (selectedMember.photograph_url) e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="profile-photo-ring"
+            style={{ width: '180px', height: '180px', margin: '0 auto 24px', cursor: selectedMember.photograph_url ? 'zoom-in' : 'default' }}
+            title={selectedMember.photograph_url ? 'Click to expand photo' : selectedMember.name}
+            onClick={() => {
+              if (selectedMember.photograph_url) {
+                setZoomedImage({ url: selectedMember.photograph_url, name: selectedMember.name, role: selectedMember.role });
+              }
+            }}
+          >
+            <div style={{ width: '100%', height: '100%', borderRadius: '26px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
               {selectedMember.photograph_url ? (
                 <>
                   <SafeImage
@@ -988,182 +774,78 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                     alt={selectedMember.name}
                     fallbackIcon={User}
                     fallbackText={selectedMember.name}
+                    fit="cover"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      bottom: '6px',
-                      right: '6px',
-                      backgroundColor: 'rgba(0,0,0,0.65)',
-                      borderRadius: '50%',
-                      width: '26px',
-                      height: '26px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#FFFFFF'
-                    }}
-                  >
+                  <div style={{ position: 'absolute', bottom: '8px', right: '8px', background: 'rgba(15,23,42,0.6)', borderRadius: '50%', width: '28px', height: '28px', display: 'grid', placeItems: 'center', color: '#fff' }}>
                     <Maximize2 size={13} />
                   </div>
                 </>
               ) : (
-                <span style={{ fontSize: '3.4rem', fontWeight: '900', color: palette.accent }}>
-                  {initials}
-                </span>
+                <span style={{ fontSize: '3.6rem', fontWeight: '900', color: palette.accent }}>{initials}</span>
               )}
             </div>
+          </motion.div>
 
-            {/* Role Badge - Centered */}
-            <div
-              style={{
-                display: 'inline-block',
-                padding: '5px 14px',
-                borderRadius: '6px',
-                backgroundColor: palette.badgeBg,
-                color: palette.badgeColor,
-                fontSize: '0.82rem',
-                fontWeight: '800',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                marginBottom: '10px'
-              }}
-            >
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15 }}>
+            <span className="hero-pill" style={{ paddingLeft: '14px', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.74rem' }}>
               {selectedMember.role}
-            </div>
-
-            {/* Member Name - Centered */}
-            <h1
-              style={{
-                fontSize: 'clamp(26px, 4vw, 36px)',
-                fontWeight: '900',
-                color: 'var(--navy-900)',
-                margin: '0 0 6px 0',
-                letterSpacing: '-0.025em',
-                lineHeight: '1.2'
-              }}
-            >
+            </span>
+            <h1 style={{ fontSize: 'clamp(32px, 5vw, 52px)', fontWeight: '600', letterSpacing: '0', lineHeight: '1.05', margin: '18px 0 8px', color: 'var(--navy-900)' }}>
               {selectedMember.name}
             </h1>
-
-            <p style={{ color: 'var(--slate-500)', fontSize: '0.92rem', margin: '0 0 24px 0', fontWeight: '500' }}>
-              KLEF ACM Student Chapter • KL Deemed to be University
+            <p style={{ fontSize: '0.95rem', margin: '0 0 28px', color: 'var(--slate-500)' }}>
+              KLEF ACM Student Chapter · KL Deemed to be University
             </p>
+          </motion.div>
 
-            {/* Social Connect Strip in Member Bio View - Shows ALL Custom Links */}
-            {parsed.links.length > 0 && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  padding: '16px 20px',
-                  borderRadius: '12px',
-                  backgroundColor: 'var(--slate-50)',
-                  border: '1px solid var(--border-light)',
-                  marginBottom: '28px',
-                  maxWidth: '560px',
-                  margin: '0 auto 28px auto'
-                }}
-              >
-                {parsed.links.map((item, idx) => {
-                  const Icon = item.icon;
-                  return (
-                    <a
-                      key={idx}
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary btn-sm"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        borderRadius: '6px',
-                        fontWeight: '700',
-                        fontSize: '0.86rem',
-                        backgroundColor: '#FFFFFF',
-                        border: '1px solid var(--border-light)',
-                        color: item.color,
-                        textDecoration: 'none',
-                        transition: 'all 0.18s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = item.color;
-                        e.currentTarget.style.color = '#FFFFFF';
-                        e.currentTarget.style.borderColor = item.color;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#FFFFFF';
-                        e.currentTarget.style.color = item.color;
-                        e.currentTarget.style.borderColor = 'var(--border-light)';
-                      }}
-                    >
-                      <Icon size={16} />
-                      <span>{item.label}</span>
-                      <ExternalLink size={12} style={{ opacity: 0.7 }} />
-                    </a>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Full Biography Section */}
-            <div style={{ marginTop: '16px', textAlign: 'left' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-                <BookOpen size={18} color="var(--primary)" />
-                <h2 style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--navy-900)', margin: 0 }}>
-                  Profile Biography & Leadership Overview
-                </h2>
-              </div>
-
-              {parsed.bio ? (
-                <div
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-light)',
-                    padding: '28px 32px',
-                    color: 'var(--slate-700)',
-                    fontSize: '1.02rem',
-                    lineHeight: '1.85',
-                    whiteSpace: 'pre-wrap',
-                    boxShadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.02)'
-                  }}
-                  className="profile-biography-box"
-                >
-                  {parsed.bio}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    padding: '32px',
-                    textAlign: 'center',
-                    borderRadius: '12px',
-                    backgroundColor: 'var(--slate-50)',
-                    border: '1px dashed var(--border-light)',
-                    color: 'var(--slate-500)',
-                    fontSize: '0.95rem'
-                  }}
-                >
-                  No detailed biography currently published for this chapter member.
-                </div>
-              )}
-            </div>
-          </div>
+          {parsed.links.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }}
+              style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px' }}
+            >
+              {parsed.links.map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <a key={idx} href={item.url} target="_blank" rel="noopener noreferrer" className="profile-link-chip">
+                    <Icon size={16} />
+                    <span>{item.label}</span>
+                    <ExternalLink size={12} style={{ opacity: 0.7 }} />
+                  </a>
+                );
+              })}
+            </motion.div>
+          )}
         </div>
+
+        {/* Biography */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.35 }}
+          className="glass"
+          style={{ marginTop: '-36px', marginInline: 'clamp(0px, 3vw, 32px)', padding: 'clamp(24px, 4vw, 40px)', position: 'relative', zIndex: 2 }}
+        >
+          <div className="editorial-kicker" style={{ marginBottom: '14px' }}>
+            <BookOpen size={14} /> Biography
+          </div>
+          {parsed.bio ? (
+            <div className="profile-biography-box" style={{ color: 'var(--navy-700)', fontSize: '1.04rem', lineHeight: '1.85', whiteSpace: 'pre-wrap' }}>
+              {parsed.bio}
+            </div>
+          ) : (
+            <p style={{ margin: 0, color: 'var(--slate-500)' }}>No biography has been published for this member yet.</p>
+          )}
+        </motion.div>
       </motion.div>
     );
   };
 
   return (
-    <div style={{ backgroundColor: '#FCFCFD', minHeight: '80vh', paddingBottom: '88px' }}>
+    <div style={{ minHeight: '80vh', paddingBottom: '88px' }}>
       {/* Editorial Header */}
       {!selectedMember && (
-        <section style={{ backgroundColor: '#FFFFFF', padding: '72px 0', borderBottom: '1px solid var(--border-light)' }}>
+        <section className="page-hero bg-mesh">
+          <div className="orb orb-red" />
+          <div className="orb orb-blue" />
           <div className="container">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px' }}>
               <div style={{ maxWidth: '740px' }}>
@@ -1178,10 +860,10 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                   as="h1"
                   defaultValue="Chapter Committee & Leadership"
                   style={{
-                    fontSize: 'clamp(28px, 4vw, 40px)',
+                    fontSize: 'clamp(32px, 5vw, 56px)',
                     fontWeight: '800',
                     color: 'var(--navy-900)',
-                    letterSpacing: '-0.025em',
+                    letterSpacing: '0',
                     marginBottom: '12px',
                     lineHeight: '1.2',
                   }}
@@ -1192,7 +874,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                   defaultValue="Faculty Mentors, Student Executive Officers, and Technical Division Leads guiding KLEF ACM."
                   style={{
                     color: 'var(--slate-600)',
-                    fontSize: '1.05rem',
+                    fontSize: '1.1rem',
                     lineHeight: '1.65',
                     margin: 0,
                   }}
@@ -1230,7 +912,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
             renderDedicatedProfileView()
           ) : siteDataLoading && members.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '72px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <Loader2 size={36} className="animate-spin" color="#005CA9" style={{ marginBottom: '16px' }} />
+              <Loader2 size={36} className="animate-spin" color="#0077B6" style={{ marginBottom: '16px' }} />
               <p style={{ color: 'var(--slate-500)', fontSize: '0.94rem', fontWeight: '600' }}>Loading chapter leadership roster from database...</p>
             </div>
           ) : members.length === 0 ? (
@@ -1257,7 +939,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                   <span>✨ Drag & Drop any card to reposition in real-time, or use the arrow buttons!</span>
                 </div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '32px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>
                 {members.map((member, idx) => (
                   isVisualAdmin ? (
                     renderMemberCard(member, idx)
@@ -1381,7 +1063,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
               <h4 style={{ color: '#FFFFFF', fontSize: '1.15rem', fontWeight: '800', margin: '0 0 2px 0' }}>
                 {zoomedImage.name}
               </h4>
-              <span style={{ color: '#38BDF8', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              <span style={{ color: '#5BBAE4', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 {zoomedImage.role}
               </span>
             </div>
@@ -1556,7 +1238,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                       gap: '4px',
                       padding: '6px 12px',
                       borderRadius: '6px',
-                      backgroundColor: '#005CA9',
+                      backgroundColor: '#0077B6',
                       color: '#ffffff',
                       border: 'none',
                       fontSize: '0.8rem',
@@ -1588,7 +1270,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                     else if (uLower.includes('medium.com')) { badgeLabel = 'Medium'; badgeColor = '#12100E'; }
                     else if (uLower.includes('scholar.google')) { badgeLabel = 'Scholar'; badgeColor = '#4285F4'; }
                     else if (uLower.includes('researchgate.net')) { badgeLabel = 'Research'; badgeColor = '#00CCBB'; }
-                    else if (urlValue.trim()) { badgeLabel = 'Portfolio'; badgeColor = '#005CA9'; }
+                    else if (urlValue.trim()) { badgeLabel = 'Portfolio'; badgeColor = '#0077B6'; }
 
 
                     return (
@@ -1658,7 +1340,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                   type="submit"
                   disabled={isSubmitting}
                   className="btn btn-primary"
-                  style={{ padding: '10px 24px', fontWeight: '800', backgroundColor: '#005CA9', borderColor: '#005CA9' }}
+                  style={{ padding: '10px 24px', fontWeight: '800', backgroundColor: '#0077B6', borderColor: '#0077B6' }}
                 >
                   {isSubmitting ? 'Saving...' : editingMember ? 'Save Changes' : 'Add Member'}
                 </button>

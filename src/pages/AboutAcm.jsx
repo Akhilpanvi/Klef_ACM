@@ -120,9 +120,11 @@ export default function AboutAcm() {
   };
 
   return (
-    <div style={{ backgroundColor: '#FCFCFD', minHeight: '80vh', paddingBottom: '88px' }}>
+    <div style={{ backgroundColor: 'transparent', minHeight: '80vh', paddingBottom: '88px' }}>
       {/* Page Title Header */}
-      <section style={{ backgroundColor: '#FFFFFF', padding: '72px 0', borderBottom: '1px solid var(--border-light)' }}>
+      <section className="page-hero bg-mesh">
+        <div className="orb orb-red" />
+        <div className="orb orb-blue" />
         <div className="container">
           <VisualEditable
             name="page_tag"
@@ -134,7 +136,7 @@ export default function AboutAcm() {
             name="page_title"
             as="h1"
             defaultValue="Association for Computing Machinery"
-            style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '-0.025em', marginBottom: '16px', maxWidth: '720px' }}
+            style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: '800', color: 'var(--navy-900)', letterSpacing: '0', marginBottom: '16px', maxWidth: '720px' }}
           />
           <VisualEditable
             name="introduction"
@@ -192,7 +194,7 @@ export default function AboutAcm() {
                   <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: '600', color: 'var(--primary)', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>
                     0{idx + 1} //
                   </span>
-                  <h2 style={{ fontSize: 'clamp(24px, 3.2vw, 36px)', color: 'var(--navy-900)', marginBottom: '14px', letterSpacing: '-0.025em', fontWeight: '800', lineHeight: '1.2' }}>
+                  <h2 style={{ fontSize: 'clamp(24px, 3.2vw, 36px)', color: 'var(--navy-900)', marginBottom: '14px', letterSpacing: '0', fontWeight: '800', lineHeight: '1.2' }}>
                     <SplitText line1={sec.line1} line2={sec.line2} delay={50} />
                   </h2>
                   <VisualEditable

@@ -38,6 +38,7 @@ export default function Header() {
               {item.label}
             </NavLink>
           ))}
+          <Link to="/Contact" className="btn btn-red nav-cta">Join the Chapter</Link>
         </nav>
 
         {/* Mobile Menu Toggle Button */}
