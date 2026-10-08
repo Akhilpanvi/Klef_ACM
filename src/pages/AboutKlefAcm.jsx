@@ -123,7 +123,7 @@ export default function AboutKlefAcm() {
                     <div 
                       key={idx} 
                       style={{ 
-                        backgroundColor: '#FFFFFF', 
+                        backgroundColor: 'var(--card)', 
                         padding: '24px', 
                         borderRadius: '4px', 
                         border: '1px solid var(--border-light)',
@@ -171,7 +171,7 @@ export default function AboutKlefAcm() {
                       fontSize: '0.92rem', 
                       fontWeight: '700',
                       padding: '16px 20px', 
-                      backgroundColor: '#FFFFFF', 
+                      backgroundColor: 'var(--card)', 
                       borderRadius: '4px', 
                       border: '1px solid var(--border-light)',
                       transition: 'border-color 0.2s ease',
@@ -229,7 +229,7 @@ export default function AboutKlefAcm() {
           {/* Section: Vision & Mission */}
           <ScrollReveal delay={100} duration={700}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px' }} className="vision-mission-grid">
-              <div style={{ backgroundColor: '#FFFFFF', padding: '28px', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
+              <div style={{ backgroundColor: 'var(--card)', padding: '28px', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
                 <h3 style={{ fontSize: '1.15rem', color: 'var(--navy-900)', fontWeight: '800', marginBottom: '12px', marginTop: 0, lineHeight: '1.2' }}>
                   <SplitText line1="Our" line2="Vision" delay={100} />
                 </h3>
@@ -240,7 +240,7 @@ export default function AboutKlefAcm() {
                   style={{ color: 'var(--slate-600)', fontSize: '0.92rem', lineHeight: '1.7', margin: 0 }}
                 />
               </div>
-              <div style={{ backgroundColor: '#FFFFFF', padding: '28px', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
+              <div style={{ backgroundColor: 'var(--card)', padding: '28px', borderRadius: '4px', border: '1px solid var(--border-light)' }}>
                 <h3 style={{ fontSize: '1.15rem', color: 'var(--navy-900)', fontWeight: '800', marginBottom: '12px', marginTop: 0, lineHeight: '1.2' }}>
                   <SplitText line1="Our" line2="Mission" delay={200} />
                 </h3>
@@ -257,7 +257,7 @@ export default function AboutKlefAcm() {
           {/* Section: Faculty Coordinator Information */}
           {facultySupport && (
             <ScrollReveal delay={150} duration={750}>
-              <div style={{ borderLeft: '3px solid var(--primary)', paddingLeft: '20px', backgroundColor: '#FFFFFF', padding: '20px 24px', borderRadius: '0 4px 4px 0', border: '1px solid var(--border-light)', borderLeftColor: 'var(--primary)' }}>
+              <div style={{ borderLeft: '3px solid var(--primary)', paddingLeft: '20px', backgroundColor: 'var(--card)', padding: '20px 24px', borderRadius: '0 4px 4px 0', border: '1px solid var(--border-light)', borderLeftColor: 'var(--primary)' }}>
                 <h3 style={{ fontSize: '1.15rem', color: 'var(--navy-900)', fontWeight: '800', marginBottom: '10px', marginTop: 0, lineHeight: '1.2' }}>
                   <SplitText line1="Faculty" line2="Support" delay={100} />
                 </h3>

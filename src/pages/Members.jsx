@@ -766,7 +766,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
               }
             }}
           >
-            <div style={{ width: '100%', height: '100%', borderRadius: '26px', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <div style={{ width: '100%', height: '100%', borderRadius: '26px', overflow: 'hidden', background: 'var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
               {selectedMember.photograph_url ? (
                 <>
                   <SafeImage
@@ -916,7 +916,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
               <p style={{ color: 'var(--slate-500)', fontSize: '0.94rem', fontWeight: '600' }}>Loading chapter leadership roster from database...</p>
             </div>
           ) : members.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '64px 20px', border: '1px dashed var(--slate-300)', borderRadius: '12px', backgroundColor: '#FFFFFF' }}>
+            <div style={{ textAlign: 'center', padding: '64px 20px', border: '1px dashed var(--slate-300)', borderRadius: '12px', backgroundColor: 'var(--card)' }}>
               <User size={44} style={{ color: 'var(--slate-400)', margin: '0 auto 16px auto' }} />
               <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--navy-900)', marginBottom: '8px' }}>No Members Added Yet</h3>
               <p style={{ color: 'var(--slate-600)', fontSize: '0.95rem' }}>Chapter leadership and members will appear here.</p>
@@ -1090,7 +1090,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
         >
           <div
             style={{
-              backgroundColor: '#ffffff',
+              backgroundColor: 'var(--card)',
               borderRadius: '16px',
               maxWidth: '620px',
               width: '100%',
@@ -1280,7 +1280,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                             fontSize: '0.72rem', 
                             fontWeight: '800', 
                             color: badgeColor, 
-                            backgroundColor: '#ffffff', 
+                            backgroundColor: 'var(--card)', 
                             border: '1px solid #cbd5e1', 
                             borderRadius: '4px', 
                             padding: '6px 8px', 
@@ -1301,7 +1301,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                             borderRadius: '6px',
                             border: '1px solid #cbd5e1',
                             fontSize: '0.86rem',
-                            backgroundColor: '#ffffff'
+                            backgroundColor: 'var(--card)'
                           }}
                         />
                         <button
@@ -1332,7 +1332,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                 <button
                   type="button"
                   onClick={() => setMemberModalOpen(false)}
-                  style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontWeight: '700' }}
+                  style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'var(--card)', cursor: 'pointer', fontWeight: '700' }}
                 >
                   Cancel
                 </button>

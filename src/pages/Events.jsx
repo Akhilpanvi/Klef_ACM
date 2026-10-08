@@ -508,7 +508,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
           {/* Dedicated Event Article Card */}
           <article
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--card)',
               borderRadius: '16px',
               border: '1px solid var(--border-light)',
               boxShadow: '0 8px 30px rgba(0, 0, 0, 0.05)',
@@ -654,7 +654,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
               >
                 {/* Date & Time */}
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                  <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#0077B6' }}>
+                  <div style={{ backgroundColor: 'var(--card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#0077B6' }}>
                     <Calendar size={20} />
                   </div>
                   <div>
@@ -670,7 +670,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
 
                 {/* Location / Venue */}
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                  <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#0077B6' }}>
+                  <div style={{ backgroundColor: 'var(--card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#0077B6' }}>
                     <MapPin size={20} />
                   </div>
                   <div>
@@ -687,7 +687,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                 {/* Speaker (if available) */}
                 {selectedEvent.speaker && (
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#0077B6' }}>
+                    <div style={{ backgroundColor: 'var(--card)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)', color: '#0077B6' }}>
                       <User size={20} />
                     </div>
                     <div>
@@ -824,7 +824,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                 display: 'flex', 
                 justifyContent: 'space-between', 
                 alignItems: 'center', 
-                backgroundColor: '#FFFFFF', 
+                backgroundColor: 'var(--card)', 
                 padding: '14px 18px', 
                 borderRadius: '4px', 
                 border: '1px solid var(--border-light)',
@@ -894,7 +894,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                     padding: '8px 12px',
                     borderRadius: '4px',
                     border: '1px solid var(--slate-300)',
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: 'var(--card)',
                     fontSize: '0.84rem',
                     fontWeight: '600',
                     color: 'var(--navy-700)'
@@ -917,7 +917,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                       padding: '8px 12px 8px 34px',
                       borderRadius: '4px',
                       border: '1px solid var(--slate-300)',
-                      backgroundColor: '#FFFFFF',
+                      backgroundColor: 'var(--card)',
                       fontSize: '0.84rem',
                       color: 'var(--navy-900)'
                     }}
@@ -931,7 +931,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
           <section style={{ padding: '40px 0' }}>
             <div className="container">
               {filteredEvents.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '64px 20px', border: '1px dashed var(--slate-300)', borderRadius: '4px', backgroundColor: '#FFFFFF' }}>
+                <div style={{ textAlign: 'center', padding: '64px 20px', border: '1px dashed var(--slate-300)', borderRadius: '4px', backgroundColor: 'var(--card)' }}>
                   <Calendar size={44} style={{ color: 'var(--slate-400)', margin: '0 auto 16px auto' }} />
                   <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--navy-900)', marginBottom: '8px' }}>No Events Scheduled</h3>
                   <p style={{ color: 'var(--slate-600)', fontSize: '0.95rem' }}>There are currently no events matching your selected filter.</p>
@@ -971,7 +971,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                           onDragEnd={handleDragEnd}
                           className="event-card-container"
                           style={{
-                            backgroundColor: '#FFFFFF',
+                            backgroundColor: 'var(--card)',
                             borderRadius: '12px',
                             border: dragOverIdx === idx && draggedIdx !== idx ? '2px dashed #0077B6' : '1px solid var(--border-light)',
                             overflow: 'hidden',
@@ -1232,7 +1232,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
         >
           <div
             style={{
-              backgroundColor: '#ffffff',
+              backgroundColor: 'var(--card)',
               borderRadius: '16px',
               maxWidth: '620px',
               width: '100%',
@@ -1286,7 +1286,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                   <select
                     value={eventForm.event_format}
                     onChange={(e) => setEventForm({ ...eventForm, event_format: e.target.value })}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', fontWeight: '600', backgroundColor: '#FFFFFF' }}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', fontWeight: '600', backgroundColor: 'var(--card)' }}
                   >
                     <option value="in_person">In-Person (Offline on Campus)</option>
                     <option value="online">Online (Virtual Webinar / Meeting)</option>
@@ -1449,7 +1449,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                 <button
                   type="button"
                   onClick={() => setAdminModalOpen(false)}
-                  style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontWeight: '700', cursor: 'pointer' }}
+                  style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: 'var(--card)', fontWeight: '700', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>

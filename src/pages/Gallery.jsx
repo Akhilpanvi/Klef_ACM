@@ -604,7 +604,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
               {/* Instagram-Style Post Frame */}
               <div
                 style={{
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: 'var(--card)',
                   borderRadius: '20px',
                   border: '1.5px solid var(--border-light)',
                   boxShadow: '0 16px 48px rgba(0, 0, 0, 0.08)',
@@ -943,7 +943,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
               transition={{ duration: 0.2 }}
             >
               {gallery.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '64px 20px', border: '1.5px dashed var(--slate-300)', borderRadius: '16px', backgroundColor: '#FFFFFF' }}>
+                <div style={{ textAlign: 'center', padding: '64px 20px', border: '1.5px dashed var(--slate-300)', borderRadius: '16px', backgroundColor: 'var(--card)' }}>
                   <ImageIcon size={48} style={{ color: 'var(--slate-400)', margin: '0 auto 16px auto' }} />
                   <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--navy-900)', marginBottom: '8px' }}>No Event Photographs Available</h3>
                   <p style={{ color: 'var(--slate-600)', fontSize: '0.95rem' }}>Photographs and albums from chapter activities will appear here.</p>
@@ -983,7 +983,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                           onDrop={(e) => handleDrop(e, idx)}
                           onDragEnd={handleDragEnd}
                           style={{
-                            backgroundColor: '#FFFFFF',
+                            backgroundColor: 'var(--card)',
                             borderRadius: '16px',
                             border: dragOverIdx === idx && draggedIdx !== idx ? '2px dashed #0077B6' : '1.5px solid var(--border-light)',
                             boxShadow: dragOverIdx === idx && draggedIdx !== idx ? '0 16px 36px rgba(0, 119, 182, 0.2)' : '0 4px 18px rgba(0, 0, 0, 0.04)',
@@ -1325,7 +1325,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
         >
           <div
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--card)',
               borderRadius: '20px',
               maxWidth: '640px',
               width: '100%',
@@ -1495,7 +1495,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                           fontSize: '0.74rem', 
                           fontWeight: '800', 
                           color: idx === 0 ? '#0077B6' : '#64748B', 
-                          backgroundColor: '#FFFFFF', 
+                          backgroundColor: 'var(--card)', 
                           border: '1px solid #CBD5E1', 
                           borderRadius: '6px', 
                           padding: '6px 8px', 
@@ -1516,7 +1516,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                           borderRadius: '6px',
                           border: '1px solid #CBD5E1',
                           fontSize: '0.86rem',
-                          backgroundColor: '#FFFFFF'
+                          backgroundColor: 'var(--card)'
                         }}
                       />
                       <button
@@ -1574,7 +1574,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #CBD5E1', background: '#FFFFFF', cursor: 'pointer', fontWeight: '700' }}
+                  style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #CBD5E1', background: 'var(--card)', cursor: 'pointer', fontWeight: '700' }}
                 >
                   Cancel
                 </button>

@@ -89,7 +89,7 @@ Andhra Pradesh, India – 522302`;
           {/* Column 1: Info & Campus Desk */}
           <ScrollReveal delay={0} duration={600}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-              <div style={{ border: '1px solid var(--border-light)', padding: '32px', borderRadius: '4px', backgroundColor: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ border: '1px solid var(--border-light)', padding: '32px', borderRadius: '4px', backgroundColor: 'var(--card)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--navy-900)', margin: 0, paddingBottom: '12px', borderBottom: '1px solid var(--border-light)' }}>
                   Chapter Directory
                 </h2>
@@ -139,7 +139,7 @@ Andhra Pradesh, India – 522302`;
               </div>
 
               {/* Map Directions & Iframe */}
-              <div style={{ border: '1px solid var(--border-light)', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#FFFFFF', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ border: '1px solid var(--border-light)', borderRadius: '4px', overflow: 'hidden', backgroundColor: 'var(--card)', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontWeight: '700', fontSize: '0.78rem', color: 'var(--navy-900)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                     KL University Campus Map
@@ -173,7 +173,7 @@ Andhra Pradesh, India – 522302`;
 
           {/* Column 2: Message Form */}
           <ScrollReveal delay={150} duration={650}>
-            <div style={{ border: '1px solid var(--border-light)', padding: '36px', borderRadius: '4px', backgroundColor: '#FFFFFF' }}>
+            <div style={{ border: '1px solid var(--border-light)', padding: '36px', borderRadius: '4px', backgroundColor: 'var(--card)' }}>
               <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--navy-900)', margin: 0, paddingBottom: '14px', borderBottom: '1px solid var(--border-light)', marginBottom: '28px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MessageSquare size={18} style={{ color: 'var(--primary)' }} />
                 Send An Enquiry

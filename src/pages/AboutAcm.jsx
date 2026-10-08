@@ -148,7 +148,7 @@ export default function AboutAcm() {
       </section>
 
       {/* Mobile Anchor Navigation */}
-      <div className="mobile-nav-tags-container" style={{ borderBottom: '1px solid var(--border-light)', backgroundColor: '#FFFFFF', position: 'sticky', top: 'var(--header-height)', zIndex: 90 }}>
+      <div className="mobile-nav-tags-container" style={{ borderBottom: '1px solid var(--border-light)', backgroundColor: 'var(--card)', position: 'sticky', top: 'var(--header-height)', zIndex: 90 }}>
         <div className="container" style={{ overflowX: 'auto', whiteSpace: 'nowrap', padding: '12px 24px', display: 'flex', gap: '8px', scrollbarWidth: 'none' }}>
           {sections.map(sec => (
             <a 
@@ -225,7 +225,7 @@ export default function AboutAcm() {
           {/* Right Column: Sticky Sidebar Contents */}
           <div className="desktop-sidebar" style={{ position: 'sticky', top: '110px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             {/* Table of Contents anchors */}
-            <div style={{ border: '1px solid var(--border-light)', padding: '28px', borderRadius: '4px', backgroundColor: '#FFFFFF' }}>
+            <div style={{ border: '1px solid var(--border-light)', padding: '28px', borderRadius: '4px', backgroundColor: 'var(--card)' }}>
               <h3 style={{ fontSize: '0.78rem', color: 'var(--slate-500)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', marginBottom: '16px', marginTop: 0 }}>
                 Table of Contents
               </h3>
@@ -264,7 +264,7 @@ export default function AboutAcm() {
             </div>
 
             {/* Official Explore Links */}
-            <div style={{ border: '1px solid var(--border-light)', padding: '28px', borderRadius: '4px', backgroundColor: '#FFFFFF' }}>
+            <div style={{ border: '1px solid var(--border-light)', padding: '28px', borderRadius: '4px', backgroundColor: 'var(--card)' }}>
               <h3 style={{ fontSize: '0.78rem', color: 'var(--slate-500)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', marginBottom: '16px', marginTop: 0 }}>
                 Explore ACM
               </h3>

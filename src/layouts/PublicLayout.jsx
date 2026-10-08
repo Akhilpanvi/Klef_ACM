@@ -69,7 +69,7 @@ export default function PublicLayout() {
     // Check if on specific member bio/profile detail route
     const isMemberBioPage = /^\/members\/.+/i.test(location.pathname);
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div className="theme-dark" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         {/* Loading screen: once per full page load */}
         <Loader />
 

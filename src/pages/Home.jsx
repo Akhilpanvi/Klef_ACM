@@ -12,6 +12,8 @@ import { parseMemberData } from '../utils/dataHelpers.jsx';
 
 const ease = [0.16, 1, 0.3, 1];
 const CAMPUS = `${import.meta.env.BASE_URL}brand/KL%20Buildings/klu.jpg`;
+// Digital renders of KL University buildings (public/brand/campus)
+const RENDERS = [1, 2, 3, 4, 5, 6].map(n => `${import.meta.env.BASE_URL}brand/campus/render-0${n}.jpg`);
 
 // ACM Code of Ethics, section 1 (General Ethical Principles), abbreviated
 const ETHICS = [
@@ -74,6 +76,24 @@ function Cassette({ label, color = '#D32A38' }) {
   );
 }
 
+// One render in the pinned reel: wipes up over the previous one during its slice of the scroll
+function CampusFrame({ src, i, n, progress }) {
+  const start = (i - 1) / (n - 1);
+  const end = i / (n - 1);
+  const clip = useTransform(progress, [start, end], ['inset(100% 0% 0% 0%)', 'inset(0% 0% 0% 0%)']);
+  const scale = useTransform(progress, [start, Math.min(1, end + 0.2)], [1.15, 1]);
+  return (
+    <motion.div className="campus-frame" style={i === 0 ? undefined : { clipPath: clip }}>
+      <motion.img src={src} alt="" style={{ scale: i === 0 ? 1 : scale }} loading="lazy" />
+    </motion.div>
+  );
+}
+
+function CampusBar({ i, n, progress }) {
+  const fill = useTransform(progress, [(i - 1) / (n - 1), i / (n - 1)], [0, 1]);
+  return <span><motion.i style={{ scaleX: i === 0 ? 1 : fill }} /></span>;
+}
+
 const profilePath = (m) =>
   `/Members/${encodeURIComponent((m.name || 'member').trim().replace(/\s+/g, '-'))}/${encodeURIComponent((m.role || 'Member').trim().replace(/\s+/g, '-'))}`;
 
@@ -114,6 +134,12 @@ export default function Home() {
   const { scrollYProgress: aboutP } = useScroll({ target: aboutRef, offset: ['start start', 'end end'] });
   const [aboutIdx, setAboutIdx] = useState(0);
   useMotionValueEvent(aboutP, 'change', v => setAboutIdx(Math.min(about.length - 1, Math.floor(v * about.length))));
+
+  // --- Campus renders: pinned reel
+  const campusRef = useRef(null);
+  const { scrollYProgress: campusP } = useScroll({ target: campusRef, offset: ['start start', 'end end'] });
+  const [campusIdx, setCampusIdx] = useState(0);
+  useMotionValueEvent(campusP, 'change', v => setCampusIdx(Math.min(RENDERS.length - 1, Math.round(v * (RENDERS.length - 1)))));
 
   // --- Domains: vertical scroll drives a horizontal track
   const domRef = useRef(null);
@@ -237,6 +263,26 @@ export default function Home() {
                 ))}
               </ul>
               <a href="https://www.acm.org/code-of-ethics" target="_blank" rel="noopener noreferrer" className="text-link" style={{ marginTop: '24px' }}>Read the ACM Code of Ethics ↗</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= CAMPUS RENDERS (pinned reveal) ================= */}
+      <section ref={campusRef} className="campus-pin" style={{ height: reduce ? 'auto' : `${RENDERS.length * 90}vh` }}>
+        <div className="campus-stage" style={reduce ? { position: 'relative', height: '80vh' } : undefined}>
+          {RENDERS.map((src, i) => <CampusFrame key={src} src={src} i={i} n={RENDERS.length} progress={campusP} />)}
+          <div className="campus-ui">
+            <div className="container">
+              <div className="o-kicker" style={{ color: '#FF5A62' }}>KL University · Digital designs</div>
+              <h2 className="giant" style={{ color: '#fff' }}><Line>The campus</Line><Line delay={0.08}><span style={{ color: '#FF5A62' }}>of tomorrow</span></Line></h2>
+            </div>
+            <div className="container">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap' }}>
+                <p className="mono" style={{ color: 'rgba(255,255,255,0.8)', maxWidth: '420px' }}>Architectural renders of the Green Fields campus, Vaddeswaram — where KLEF ACM builds, learns and leads.</p>
+                <span className="campus-count">0{campusIdx + 1} / 0{RENDERS.length}</span>
+              </div>
+              <div className="campus-bars">{RENDERS.map((_, i) => <CampusBar key={i} i={i} n={RENDERS.length} progress={campusP} />)}</div>
             </div>
           </div>
         </div>
