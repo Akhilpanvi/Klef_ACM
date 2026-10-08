@@ -361,6 +361,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // allow picking the same file again after an error
     if (!file) return;
 
     setUploadingImage(true);
@@ -374,6 +375,8 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
           const res = await api.uploadImage(file.name, file.type, base64);
           if (res && res.url) {
             setEventForm(prev => ({ ...prev, image_url: res.url }));
+          } else {
+            setFormError('Upload finished but no image URL was returned.');
           }
         } catch (uploadErr) {
           setFormError(uploadErr.message || 'Image upload failed');
@@ -1404,9 +1407,19 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
                     }}
                   >
                     {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                    <span>Upload</span>
+                    <span>{uploadingImage ? 'Uploading…' : 'Upload'}</span>
                   </button>
                 </div>
+                {eventForm.image_url && (
+                  <div style={{ marginTop: '10px', position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid #cbd5e1', maxHeight: '180px', background: '#f1f5f9' }}>
+                    <img src={eventForm.image_url} alt="Banner preview" style={{ width: '100%', maxHeight: '180px', objectFit: 'cover', display: 'block' }}
+                      onError={() => setFormError('The banner image URL could not be loaded. Check the link or upload again.')} />
+                    <button type="button" onClick={() => setEventForm(prev => ({ ...prev, image_url: '' }))}
+                      style={{ position: 'absolute', top: '8px', right: '8px', padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'rgba(15,23,42,0.75)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Description */}

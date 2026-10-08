@@ -233,12 +233,39 @@ export const api = {
    * Uploads an image payload to object storage and returns the permanent public URL
    */
   async uploadImage(name, type, base64Body) {
+    const img = await shrinkImage(name, type, base64Body);
     const res = await fetch(`${API_BASE}/upload`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, type, body: base64Body }),
+      body: JSON.stringify(img),
       credentials: 'same-origin',
     });
     return handleResponse(res);
   },
 };
+
+const MAX_UPLOAD_DIM = 1600; // px, longest side — plenty for banners and portraits
+
+// Downscale + re-encode in the browser so a 5MB phone photo uploads as ~200KB.
+// Keeps the original when it can't help (SVG/GIF) or when the result isn't smaller.
+async function shrinkImage(name, type, base64Body) {
+  const raw = String(base64Body).replace(/^data:[^,]*,/, '');
+  if (!/^image\/(jpe?g|png|webp)$/i.test(type || '')) return { name, type, body: raw };
+  try {
+    const bitmap = await createImageBitmap(await (await fetch(`data:${type};base64,${raw}`)).blob());
+    const scale = Math.min(1, MAX_UPLOAD_DIM / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    // WebP keeps PNG transparency and beats JPEG on size
+    const out = canvas.toDataURL('image/webp', 0.85);
+    if (!out.startsWith('data:image/webp')) return { name, type, body: raw }; // browser can't encode WebP
+    const body = out.split(',')[1];
+    if (body.length >= raw.length) return { name, type, body: raw };
+    return { name: name.replace(/\.[^.]+$/, '') + '.webp', type: 'image/webp', body };
+  } catch {
+    return { name, type, body: raw };
+  }
+}
+

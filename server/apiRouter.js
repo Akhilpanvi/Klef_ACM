@@ -820,16 +820,12 @@ export function createApiRouter() {
       }
 
       if (uploadErr) {
-        // High performance fallback: return valid inline base64 data URI
-        if (rawBase64.length < 5 * 1024 * 1024) {
-          const validDataUri = body.startsWith('data:') ? body : `data:${type || 'image/jpeg'};base64,${rawBase64}`;
-          return res.json({
-            url: validDataUri,
-            path: 'inline-data-uri',
-            notice: 'Image embedded directly. Create the "acm-media" public bucket in Supabase for CDN hosting.'
-          });
-        }
-        throw uploadErr;
+        // No base64-in-database fallback: it bloated public data to 12MB+ and caused query timeouts.
+        console.error('Storage upload failed:', uploadErr.message || uploadErr);
+        return res.status(503).json({
+          error: 'Image storage is not set up. In Supabase, create a public Storage bucket named "acm-media", '
+            + 'and make sure SUPABASE_SERVICE_ROLE_KEY in .env is the secret (service_role) key.',
+        });
       }
 
       const { data: publicUrlData } = supabase
