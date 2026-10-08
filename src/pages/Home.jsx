@@ -102,7 +102,7 @@ export default function Home() {
   const tiltX = useSpring(useTransform(my, [-1, 1], [34, 24]), { stiffness: 60, damping: 18 });
   const { scrollYProgress: heroP } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const campusY = useTransform(heroP, [0, 1], ['0%', '18%']);
-  const campusScale = useTransform(heroP, [0, 1], [1, 1.15]);
+  const campusScale = useTransform(heroP, [0, 1], [1, 1.04]);
   const onHeroMove = (e) => {
     const r = e.currentTarget.getBoundingClientRect();
     mx.set(((e.clientX - r.left) / r.width) * 2 - 1);
@@ -146,9 +146,12 @@ export default function Home() {
         <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
           <filter id="wireframe" colorInterpolationFilters="sRGB">
             <feColorMatrix type="saturate" values="0" />
+            {/* light blur first so JPEG noise doesn't turn into speckle */}
+            <feGaussianBlur stdDeviation="0.45" />
             <feConvolveMatrix order="3" kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1" preserveAlpha="true" />
+            {/* threshold-ish curve: keep strong edges crisp, drop faint texture */}
             <feComponentTransfer>
-              <feFuncR type="linear" slope="4" /><feFuncG type="linear" slope="4" /><feFuncB type="linear" slope="4" />
+              <feFuncR type="table" tableValues="0 0.45 0.85 1 1" /><feFuncG type="table" tableValues="0 0.45 0.85 1 1" /><feFuncB type="table" tableValues="0 0.45 0.85 1 1" />
             </feComponentTransfer>
           </filter>
         </svg>
