@@ -5,7 +5,6 @@ import { SiteDataContext } from '../App';
 import SafeImage from '../components/SafeImage';
 import VisualEditable from '../components/VisualEditor/VisualEditable';
 import PageBlockList from '../components/VisualEditor/PageBlockList';
-import { parseMemberData } from '../utils/dataHelpers.jsx';
 
 // Layout and motion inspired by acmvit.in. No photos yet (chapter just launched):
 // visuals are drawn in code — wireframe hero, SVG cassettes, gradient art.
@@ -74,9 +73,6 @@ function Cassette({ label, color = '#D32A38' }) {
   );
 }
 
-const profilePath = (m) =>
-  `/Members/${encodeURIComponent((m.name || 'member').trim().replace(/\s+/g, '-'))}/${encodeURIComponent((m.role || 'Member').trim().replace(/\s+/g, '-'))}`;
-
 export default function Home() {
   const { siteData } = useContext(SiteDataContext);
   const reduce = useReducedMotion();
@@ -84,8 +80,6 @@ export default function Home() {
   const chapterData = siteData?.pages?.['about-klef-acm']?.content || {};
   const acmData = siteData?.pages?.['about-acm']?.content || {};
   const events = (siteData?.events || []).filter(e => e.is_published);
-  const members = [...(siteData?.members || [])].sort((a, b) => parseMemberData(a).display_order - parseMemberData(b).display_order);
-  const team = members.filter(m => m.photograph_url).slice(0, 8);
   const activities = Array.isArray(chapterData.activities) && chapterData.activities.length ? chapterData.activities : DEFAULT_ACTIVITIES;
 
   const about = [
@@ -302,34 +296,6 @@ export default function Home() {
           })}
         </div>
       </section>
-
-      {/* ================= TEAM (light) ================= */}
-      {team.length > 0 && (
-        <section className="section">
-          <div className="container">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '20px', flexWrap: 'wrap', marginBottom: '48px' }}>
-              <h2 className="giant"><Line>The</Line><Line delay={0.08}><span className="t-red">Team</span></Line></h2>
-              <Link to="/Members" className="pill-btn">See the entire crew →</Link>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
-              {team.map((m, i) => (
-                <Fade key={m.id} delay={(i % 4) * 0.06}>
-                  <Link to={profilePath(m)} className="mcard" style={{ display: 'block' }}>
-                    <div className="mcard-media"><SafeImage src={m.photograph_url} alt={m.name} fit="cover" /></div>
-                    <div className="mcard-glass">
-                      <div style={{ minWidth: 0 }}>
-                        <div className="mcard-role">{m.role}</div>
-                        <h3 className="mcard-name">{m.name}</h3>
-                      </div>
-                      <span className="mcard-icon">↗</span>
-                    </div>
-                  </Link>
-                </Fade>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ================= MARQUEE (dark) ================= */}
       <section className="dark marquee" aria-hidden="true">
