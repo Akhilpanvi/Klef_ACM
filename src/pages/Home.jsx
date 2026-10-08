@@ -150,6 +150,21 @@ export default function Home() {
   const { scrollYProgress: heroP } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const videoY = useTransform(heroP, [0, 1], ['0%', '16%']);
   const videoScale = useTransform(heroP, [0, 1], [1, 1.08]);
+  const videoRef = useRef(null);
+  const [videoPaused, setVideoPaused] = useState(false);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    // React doesn't write the `muted` attribute; Safari/iOS need it to allow autoplay
+    v.muted = true;
+    v.setAttribute('muted', '');
+    v.play().catch(() => setVideoPaused(true)); // e.g. iOS Low Power Mode: show poster + play button
+  }, []);
+  const toggleVideo = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) { v.play().then(() => setVideoPaused(false)).catch(() => {}); } else { v.pause(); setVideoPaused(true); }
+  };
 
   // --- About: pinned, steps through three tapes
   const aboutRef = useRef(null);
@@ -191,12 +206,15 @@ export default function Home() {
       {/* ================= HERO (dark) ================= */}
       <section ref={heroRef} className="vhero dark">
         <motion.div className="hero-video" aria-hidden="true" style={reduce ? undefined : { y: videoY, scale: videoScale }}>
-          <video autoPlay={!reduce} muted loop playsInline preload="auto" poster={`${MEDIA}/kl-aerial-poster.jpg`}>
+          <video ref={videoRef} autoPlay muted loop playsInline preload="auto" poster={`${MEDIA}/kl-aerial-poster.jpg`}>
             <source src={`${MEDIA}/kl-aerial-mobile.mp4`} type="video/mp4" media="(max-width: 700px) and (orientation: portrait)" />
             <source src={`${MEDIA}/kl-aerial.mp4`} type="video/mp4" />
           </video>
         </motion.div>
         <div className="hero-shade" />
+        <button type="button" className="video-toggle" onClick={toggleVideo} aria-label={videoPaused ? 'Play background video' : 'Pause background video'}>
+          {videoPaused ? '▶' : '❚❚'}
+        </button>
         <div className="vglow red" />
         <div className="vglow blue" />
 
