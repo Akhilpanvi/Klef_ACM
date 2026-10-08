@@ -294,7 +294,7 @@ export default function Events({ isVisualAdmin = false, isEditMode = false }) {
     if (!selectedEvent) return;
     const dateStr = new Date(selectedEvent.date).toISOString().split('T')[0];
     const titleSlug = encodeURIComponent((selectedEvent.title || 'event').replace(/\s+/g, '-'));
-    const fullUrl = `${window.location.origin}/KLEF-ACM-SC/Events/${titleSlug}/${dateStr}`;
+    const fullUrl = `${window.location.origin}/Events/${titleSlug}/${dateStr}`;
     navigator.clipboard.writeText(fullUrl).then(() => {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);

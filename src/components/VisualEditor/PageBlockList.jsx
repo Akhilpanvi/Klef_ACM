@@ -81,7 +81,7 @@ export default function PageBlockList({ blockKey = 'blocks', slug: propSlug, cla
         initialData = { style: 'line' };
         break;
       case 'button':
-        initialData = { label: 'Explore Initiatives', url: '/KLEF-ACM-SC/Events', variant: 'primary' };
+        initialData = { label: 'Explore Initiatives', url: '/Events', variant: 'primary' };
         break;
       case 'custom_section':
         initialData = {

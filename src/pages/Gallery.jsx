@@ -260,7 +260,7 @@ export default function Gallery({ isVisualAdmin = false, isEditMode = false }) {
   const handleCopyEventLink = (item) => {
     const parsed = parseGalleryItem(item);
     const slug = encodeURIComponent(parsed.title.trim().replace(/\s+/g, '-'));
-    const url = `${window.location.origin}/KLEF-ACM-SC/Gallery/${slug}`;
+    const url = `${window.location.origin}/Gallery/${slug}`;
     navigator.clipboard?.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);

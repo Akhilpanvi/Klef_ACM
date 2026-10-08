@@ -9,8 +9,14 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
-# Route all other /KLEF-ACM-SC/* paths to the SPA index.html
+# Old links: /KLEF-ACM-SC/* -> /*
 [[redirects]]
   from = "/KLEF-ACM-SC/*"
-  to = "/KLEF-ACM-SC/index.html"
+  to = "/:splat"
+  status = 301
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200

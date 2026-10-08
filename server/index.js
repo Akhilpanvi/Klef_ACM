@@ -27,11 +27,12 @@ app.use('/api', createApiRouter());
 
 // Serve Static Frontend if built (in production)
 const distPath = path.join(__dirname, '..', 'dist');
-app.use('/KLEF-ACM-SC', express.static(distPath));
+// Old links: /KLEF-ACM-SC/... -> /...
+app.use(/^\/klef-acm-sc(\/.*)?$/i, (req, res) => res.redirect(301, req.params[0] || '/'));
 app.use(express.static(distPath));
 
 // SPA Fallback
-app.get(['/KLEF-ACM-SC/*', '/*'], (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 

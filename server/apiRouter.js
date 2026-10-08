@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { offloadPayload, offloadRows, loadInlineMedia, fetchMembersLight, MEDIA_CACHE_HEADER } from './inlineMedia.js';
 
 dotenv.config();
 
@@ -253,14 +254,7 @@ export function createApiRouter() {
                     .order('date', { ascending: false }),
                   publicDataCache.data?.events || []
                 ),
-                fetchSafe(
-                  supabase
-                    .from('members')
-                    .select('*')
-                    .eq('is_active', true)
-                    .order('display_order', { ascending: true }),
-                  publicDataCache.data?.members || []
-                ),
+                fetchSafe(fetchMembersLight(supabase), publicDataCache.data?.members || []),
                 fetchSafe(
                   supabase
                     .from('pages')
@@ -302,9 +296,9 @@ export function createApiRouter() {
                 contact: contactData?.value || publicDataCache.data?.contact || {},
               };
 
-              publicDataCache.data = payload;
+              publicDataCache.data = offloadPayload(payload);
               publicDataCache.timestamp = Date.now();
-              return payload;
+              return publicDataCache.data;
             } catch (innerErr) {
               console.warn('[Public-Data In-Flight Error]:', innerErr.message);
               if (publicDataCache.data) return publicDataCache.data;
@@ -333,11 +327,11 @@ export function createApiRouter() {
       if (type === 'events') {
         const { data, error } = await supabase.from('events').select('*').eq('is_published', true).order('date', { ascending: false });
         if (error) throw error;
-        return res.json(data || []);
+        return res.json(offloadRows('events', data || []));
       }
 
       if (type === 'members') {
-        const { data, error } = await supabase.from('members').select('*').eq('is_active', true).order('display_order', { ascending: true });
+        const { data, error } = await fetchMembersLight(supabase);
         if (error) throw error;
         return res.json(data || []);
       }
@@ -345,7 +339,7 @@ export function createApiRouter() {
       if (type === 'gallery') {
         const { data, error } = await supabase.from('gallery_images').select('*').order('created_at', { ascending: false });
         if (error) throw error;
-        return res.json(data || []);
+        return res.json(offloadRows('gallery_images', data || []));
       }
 
       if (type === 'page') {
@@ -779,6 +773,20 @@ export function createApiRouter() {
   // ---------------------------------------------------------------------------
   // 6. OBJECT STORAGE MEDIA UPLOAD (Authenticated)
   // ---------------------------------------------------------------------------
+  // Serves one image that is still stored inline (base64) in a row — see server/inlineMedia.js
+  router.get('/media/:table/:key/:field', async (req, res) => {
+    try {
+      const media = await loadInlineMedia(supabase, req.params.table, req.params.key, req.params.field);
+      if (!media) return res.status(404).json({ error: 'Not found' });
+      if (media.redirect) return res.redirect(302, media.redirect);
+      res.setHeader('Content-Type', media.type);
+      res.setHeader('Cache-Control', MEDIA_CACHE_HEADER);
+      return res.send(media.buffer);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   router.post('/upload', async (req, res) => {
     const session = verifyAdminSession(req);
     if (!session) return res.status(401).json({ error: 'Unauthorized' });

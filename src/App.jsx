@@ -111,7 +111,7 @@ export default function App() {
   return (
     <AuthContext.Provider value={{ auth, setAuth, checkAuth }}>
       <SiteDataContext.Provider value={{ siteData, setSiteData, siteDataLoading, triggerDataRefresh }}>
-        <BrowserRouter basename="/KLEF-ACM-SC">
+        <BrowserRouter>
           <Routes>
             {/* PUBLIC WEBSITE ROUTES - CAPITALIZED WITH DEEP LINKS */}
             <Route element={<PublicLayout />}>

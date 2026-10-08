@@ -1,4 +1,5 @@
 import { supabase } from './utils/db.js';
+import { offloadPayload, fetchMembersLight } from '../../server/inlineMedia.js';
 
 let netlifyCache = {
   data: null,
@@ -48,11 +49,7 @@ export async function handler(event, context) {
           .select('*')
           .eq('is_published', true)
           .order('date', { ascending: false }),
-        supabase
-          .from('members')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true }),
+        fetchMembersLight(supabase),
         supabase
           .from('pages')
           .select('slug, title, content'),
@@ -87,13 +84,13 @@ export async function handler(event, context) {
         contact: contactRes.data?.value || {},
       };
 
-      netlifyCache.data = payload;
+      netlifyCache.data = offloadPayload(payload);
       netlifyCache.timestamp = now;
 
       return {
         statusCode: 200,
         headers: { ...headers, 'X-Cache': 'MISS' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(netlifyCache.data),
       };
     }
 

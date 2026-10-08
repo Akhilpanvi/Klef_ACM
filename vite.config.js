@@ -9,13 +9,10 @@ export default defineConfig({
     {
       name: 'live-backend-api',
       configureServer(server) {
-        // Auto-redirect /KLEF-ACM-SC to /KLEF-ACM-SC/
+        // Old links: /KLEF-ACM-SC/... -> /...
         server.middlewares.use((req, res, next) => {
-          if (req.url === '/KLEF-ACM-SC' || req.url === '/klef-acm-sc') {
-            res.writeHead(302, { Location: '/KLEF-ACM-SC/' });
-            res.end();
-            return;
-          }
+          const m = req.url.match(/^\/klef-acm-sc(\/.*)?$/i);
+          if (m) { res.writeHead(301, { Location: m[1] || '/' }); res.end(); return; }
           next();
         });
         // Direct local development execution of live backend router
@@ -23,5 +20,5 @@ export default defineConfig({
       },
     },
   ],
-  base: '/KLEF-ACM-SC/',
+  base: '/',
 })

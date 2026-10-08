@@ -145,11 +145,30 @@ export default function Home() {
     { tape: 'ABOUT ACM', color: '#0093D3', title: 'ACM', text: acmData.intro || 'The Association for Computing Machinery is the world’s largest educational and scientific computing society.' }
   ];
 
-  // --- Hero: drone footage, drifts and zooms slightly on scroll
+  // --- Hero: pinned; scrolling shrinks the full-bleed drone video into a rounded frame
+  // while the headline lifts away and a caption arrives. Values are set from a JS listener
+  // (not useTransform) so framer can't hand them to a native ScrollTimeline that resets them.
   const heroRef = useRef(null);
-  const { scrollYProgress: heroP } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const videoY = useTransform(heroP, [0, 1], ['0%', '16%']);
-  const videoScale = useTransform(heroP, [0, 1], [1, 1.08]);
+  const { scrollYProgress: heroP } = useScroll({ target: heroRef, offset: ['start start', 'end end'] });
+  const vClip = useMotionValue('inset(0% 0% 0% 0% round 0px)');
+  const vScale = useMotionValue(1);
+  const shadeOpacity = useMotionValue(1);
+  const titleY = useMotionValue(0);
+  const titleOpacity = useMotionValue(1);
+  const captionOpacity = useMotionValue(0);
+  const captionY = useMotionValue(24);
+  useMotionValueEvent(heroP, 'change', p => {
+    const t = Math.min(1, Math.max(0, p / 0.75));
+    const e = 1 - Math.pow(1 - t, 3); // ease-out
+    vClip.set(`inset(${14 * e}% ${7 * e}% ${14 * e}% ${7 * e}% round ${28 * e}px)`);
+    vScale.set(1 + 0.12 * e);
+    shadeOpacity.set(1 - 0.6 * e);
+    titleY.set(-120 * e);
+    titleOpacity.set(Math.max(0, 1 - t * 1.8));
+    const c = Math.min(1, Math.max(0, (t - 0.55) / 0.45));
+    captionOpacity.set(c);
+    captionY.set(24 * (1 - c));
+  });
   const videoRef = useRef(null);
   const [videoPaused, setVideoPaused] = useState(false);
   useEffect(() => {
@@ -204,35 +223,45 @@ export default function Home() {
   return (
     <div>
       {/* ================= HERO (dark) ================= */}
-      <section ref={heroRef} className="vhero dark">
-        <motion.div className="hero-video" aria-hidden="true" style={reduce ? undefined : { y: videoY, scale: videoScale }}>
-          <video ref={videoRef} autoPlay muted loop playsInline preload="auto" poster={`${MEDIA}/kl-aerial-poster.jpg`}>
-            <source src={`${MEDIA}/kl-aerial-mobile.mp4`} type="video/mp4" media="(max-width: 700px) and (orientation: portrait)" />
-            <source src={`${MEDIA}/kl-aerial.mp4`} type="video/mp4" />
-          </video>
-        </motion.div>
-        <div className="hero-shade" />
-        <button type="button" className="video-toggle" onClick={toggleVideo} aria-label={videoPaused ? 'Play background video' : 'Pause background video'}>
-          {videoPaused ? '▶' : '❚❚'}
-        </button>
-        <div className="vglow red" />
-        <div className="vglow blue" />
+      <section ref={heroRef} className="vhero-pin" style={reduce ? { height: 'auto' } : undefined}>
+        <div className="vhero dark">
+          <motion.div className="hero-video" aria-hidden="true" style={reduce ? undefined : { clipPath: vClip }}>
+            <motion.video ref={videoRef} autoPlay muted loop playsInline preload="auto" poster={`${MEDIA}/kl-aerial-poster.jpg`} style={reduce ? undefined : { scale: vScale }}>
+              <source src={`${MEDIA}/kl-aerial-mobile.mp4`} type="video/mp4" media="(max-width: 700px) and (orientation: portrait)" />
+              <source src={`${MEDIA}/kl-aerial.mp4`} type="video/mp4" />
+            </motion.video>
+            <motion.div className="hero-shade" style={reduce ? undefined : { opacity: shadeOpacity }} />
+          </motion.div>
+          <button type="button" className="video-toggle" onClick={toggleVideo} aria-label={videoPaused ? 'Play background video' : 'Pause background video'}>
+            {videoPaused ? '▶' : '❚❚'}
+          </button>
+          <div className="vglow red" />
+          <div className="vglow blue" />
 
-        <div className="container">
-          <h1 className="vhero-title">
-            <Line><span className="t-red">we are the</span></Line>
-            <Line delay={0.08}>association for</Line>
-            <Line delay={0.16}>computing machinery</Line>
-          </h1>
-          <Fade delay={0.4} style={{ marginTop: '36px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <Link to="/Events" className="pill-btn">Explore events →</Link>
-            <Link to="/Members" className="pill-btn ghost">Meet the team</Link>
-          </Fade>
-        </div>
+          <motion.div className="container" style={reduce ? undefined : { y: titleY, opacity: titleOpacity }}>
+            <div className="o-kicker hero-kicker">KLEF · Association for Computing Machinery</div>
+            <h1 className="vhero-title">
+              <Line><span className="t-red">we don’t just</span></Line>
+              <Line delay={0.08}>learn computing.</Line>
+              <Line delay={0.16}>we build it.</Line>
+            </h1>
+            <Fade delay={0.4} style={{ marginTop: '36px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <Link to="/Events" className="pill-btn">Explore events →</Link>
+              <Link to="/Members" className="pill-btn ghost">Meet the team</Link>
+            </Fade>
+          </motion.div>
 
-        <div className="container vhero-foot mono">
-          <span>KLEF ACM Student Chapter.<br /><b>Just getting started.</b></span>
-          <span style={{ textAlign: 'right' }}>We’re not just another <b>tech club</b>.<br />We’re a community that <b>builds</b>.</span>
+          {!reduce && (
+            <motion.div className="hero-caption" style={{ opacity: captionOpacity, y: captionY }} aria-hidden="true">
+              <span className="mono">KL University · Green Fields, Vaddeswaram</span>
+              <strong>Home of KLEF ACM</strong>
+            </motion.div>
+          )}
+
+          <motion.div className="container vhero-foot mono" style={reduce ? undefined : { opacity: titleOpacity }}>
+            <span>KLEF ACM Student Chapter.<br /><b>Just getting started.</b></span>
+            <span style={{ textAlign: 'right' }}>We’re not just another <b>tech club</b>.<br />We’re a community that <b>builds</b>.</span>
+          </motion.div>
         </div>
       </section>
 

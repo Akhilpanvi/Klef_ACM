@@ -7,7 +7,14 @@ const SHOTS = [1, 2, 3, 4, 5, 6].map(n => `${import.meta.env.BASE_URL}brand/load
 const TITLE = 'ADVANCING COMPUTING';
 const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*+<>/';
 const DURATION = 3000; // ms for the counter to reach 100 (~0.5s per photo)
-const MAX_WAIT = 8000; // never hold the site longer than this, even if the API is slow
+const MAX_WAIT = 9000; // never hold the site longer than this, even if the network is slow
+
+// The page behind the loader is "ready" when fonts are in and any hero video can play through
+// without stalling, so the reveal never shows half-loaded content.
+const pageReady = () => {
+  if (document.fonts && document.fonts.status !== 'loaded') return false;
+  return [...document.querySelectorAll('.hero-video video')].every(v => v.readyState >= 3 || v.error);
+};
 
 // Reveals `text` left to right as pct grows; unrevealed letters show random glyphs.
 const scramble = (text, pct) =>
@@ -38,8 +45,8 @@ export default function Loader() {
     const tick = (now) => {
       const t = Math.min(1, (now - start) / DURATION);
       const eased = 1 - Math.pow(1 - t, 3);
-      // ponytail: timed progress, held at 90% until the window and site data have loaded
-      const ready = (loaded && dataReady.current) || now - start > MAX_WAIT;
+      // ponytail: timed progress, held at 90% until window, site data, fonts and hero video are ready
+      const ready = (loaded && dataReady.current && pageReady()) || now - start > MAX_WAIT;
       const value = Math.round((ready ? eased : Math.min(eased, 0.9)) * 100);
       setPct(value);
       setShot(Math.min(SHOTS.length - 1, Math.floor(t * SHOTS.length))); // even pacing, independent of the eased counter

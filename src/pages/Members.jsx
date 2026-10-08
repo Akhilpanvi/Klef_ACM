@@ -42,6 +42,19 @@ import {
 } from '../utils/dataHelpers.jsx';
 
 
+// Unique gradient per member: hues step by the golden angle (137.5°), an irrational fraction
+// of the circle, so no two members ever land on the same hue; neighbours are always far apart.
+const memberAura = (index) => {
+  const h = (index * 137.508 + 8) % 360;
+  const h2 = (h + 38) % 360;
+  const sat = 72 + (index % 3) * 6;
+  return {
+    a: `hsl(${h.toFixed(1)} ${sat}% 58%)`,
+    b: `hsl(${h2.toFixed(1)} ${sat}% 46%)`,
+    glow: `hsl(${h.toFixed(1)} ${sat}% 58% / 0.55)`,
+  };
+};
+
 export default function Members({ isVisualAdmin = false, isEditMode = false }) {
   const { siteData, setSiteData, siteDataLoading, triggerDataRefresh } = useContext(SiteDataContext);
   const rawMembers = siteData?.members || [];
@@ -293,7 +306,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
   const handleCopyProfileLink = (member) => {
     const nameSlug = encodeURIComponent((member.name || 'member').trim().replace(/\s+/g, '-'));
     const roleSlug = encodeURIComponent(((member.role || 'Member')).trim().replace(/\s+/g, '-'));
-    const url = `${window.location.origin}/KLEF-ACM-SC/Members/${nameSlug}/${roleSlug}`;
+    const url = `${window.location.origin}/Members/${nameSlug}/${roleSlug}`;
     navigator.clipboard?.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
@@ -674,6 +687,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
     const memberIndex = members.findIndex(m => m.id === selectedMember.id || (m.name && selectedMember.name && m.name.toLowerCase() === selectedMember.name.toLowerCase()));
     const paletteIndex = memberIndex >= 0 ? memberIndex % CARD_PALETTES.length : 0;
     const palette = CARD_PALETTES[paletteIndex];
+    const aura = memberAura(Math.max(0, memberIndex));
 
     return (
       <motion.div
@@ -749,9 +763,8 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
         </div>
 
         {/* Profile Hero */}
-        <div className="profile-hero bg-mesh" style={{ padding: 'clamp(36px, 6vw, 64px) 24px', textAlign: 'center' }}>
-          <div className="orb orb-red" style={{ width: '360px', height: '360px' }} />
-          <div className="orb orb-blue" style={{ width: '420px', height: '420px' }} />
+        <div className="profile-hero" style={{ padding: 'clamp(36px, 6vw, 64px) 24px', textAlign: 'center', '--aura-a': aura.a, '--aura-b': aura.b, '--aura-glow': aura.glow }}>
+          <div className="profile-aura" aria-hidden="true" />
 
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
