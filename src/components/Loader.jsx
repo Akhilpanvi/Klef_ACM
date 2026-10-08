@@ -2,9 +2,11 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { SiteDataContext } from '../App';
 
 const LOGO = `${import.meta.env.BASE_URL}brand/klef-acm-logo.png`;
+// KL University building photos, flashed behind the logo as the counter runs
+const SHOTS = [1, 2, 3, 4, 5, 6].map(n => `${import.meta.env.BASE_URL}brand/loader/kl-0${n}.jpg`);
 const TITLE = 'ADVANCING COMPUTING';
 const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*+<>/';
-const DURATION = 1800; // ms for the counter to reach 100
+const DURATION = 3000; // ms for the counter to reach 100 (~0.5s per photo)
 const MAX_WAIT = 8000; // never hold the site longer than this, even if the API is slow
 
 // Reveals `text` left to right as pct grows; unrevealed letters show random glyphs.
@@ -18,6 +20,7 @@ export default function Loader() {
   const [pct, setPct] = useState(0);
   const [done, setDone] = useState(false);
   const [gone, setGone] = useState(false);
+  const [shot, setShot] = useState(0);
   // Hold at 90% until the chapter data is ready so the page never flashes empty.
   const { siteDataLoading } = useContext(SiteDataContext) || {};
   const dataReady = useRef(!siteDataLoading);
@@ -39,6 +42,7 @@ export default function Loader() {
       const ready = (loaded && dataReady.current) || now - start > MAX_WAIT;
       const value = Math.round((ready ? eased : Math.min(eased, 0.9)) * 100);
       setPct(value);
+      setShot(Math.min(SHOTS.length - 1, Math.floor(t * SHOTS.length))); // even pacing, independent of the eased counter
       if (value >= 100) {
         setDone(true);
         exitTimer = setTimeout(() => {
@@ -63,6 +67,10 @@ export default function Loader() {
 
   return (
     <div className={`loader${done ? ' is-done' : ''}`} role="status" aria-label={`Loading ${pct}%`}>
+      <div className="loader-shots" aria-hidden="true">
+        {SHOTS.map((src, i) => <img key={src} src={src} alt="" className={i <= shot ? 'on' : ''} style={{ zIndex: i }} />)}
+      </div>
+
       <div className="loader-bar">
         <span>KLEF ACM <i>••</i></span>
         <span className="loader-title">{scramble(TITLE, pct)}</span>
