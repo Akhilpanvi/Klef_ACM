@@ -603,6 +603,32 @@ export function createApiRouter() {
   // ---------------------------------------------------------------------------
   // 6. OBJECT STORAGE MEDIA UPLOAD (Authenticated)
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // WEBSITE LAUNCH MODE (temporary — remove after launch day, see src/launchMode.js)
+  // GET: anyone can read whether the site is live. POST: admin flips it ({ launched: true|false }).
+  // ---------------------------------------------------------------------------
+  router.get('/launch', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!supabase) return res.json({ launched: true });
+    try {
+      const { data } = await supabase.from('site_settings').select('value').eq('key', 'launch').maybeSingle();
+      return res.json({ launched: Boolean(data?.value?.launched), launchedAt: data?.value?.at || null });
+    } catch {
+      return res.json({ launched: true }); // never lock visitors out because of a DB hiccup
+    }
+  });
+
+  router.post('/launch', async (req, res) => {
+    const session = verifyAdminSession(req);
+    if (!session) return res.status(401).json({ error: 'Only an admin can launch the website.' });
+    if (!supabase) return res.status(503).json({ error: 'Database unconfigured' });
+    const launched = req.body?.launched !== false;
+    const value = { launched, at: launched ? new Date().toISOString() : null, by: session.username };
+    const { error } = await supabase.from('site_settings').upsert({ key: 'launch', value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ launched, launchedAt: value.at });
+  });
+
   // Serves one image that is still stored inline (base64) in a row — see server/inlineMedia.js
   router.get('/media/:table/:key/:field', async (req, res) => {
     try {
