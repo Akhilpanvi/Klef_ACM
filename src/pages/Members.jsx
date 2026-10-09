@@ -1244,6 +1244,16 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                     <span>Upload</span>
                   </button>
                 </div>
+                {memberForm.photograph_url && (
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img src={memberForm.photograph_url} alt="Current photo" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Current photo. Upload or paste a new image link to replace it.</span>
+                    <button type="button" onClick={() => setMemberForm(prev => ({ ...prev, photograph_url: '' }))}
+                      style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: '6px', border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div>

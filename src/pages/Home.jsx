@@ -239,7 +239,6 @@ export default function Home() {
           <div className="vglow blue" />
 
           <motion.div className="container" style={reduce ? undefined : { y: titleY, opacity: titleOpacity }}>
-            <div className="o-kicker hero-kicker">KLEF · Association for Computing Machinery</div>
             <h1 className="vhero-title">
               <Line><span className="t-red">we don’t just</span></Line>
               <Line delay={0.08}>learn computing.</Line>
