@@ -1192,3 +1192,12 @@ body:has(.theme-dark) { background: #0C0D0F; color-scheme: dark; }
 .profile-aura::after { content: ''; position: absolute; inset: 0; background-image: var(--noise); background-size: 160px; opacity: .22; mix-blend-mode: overlay; }
 .profile-hero .profile-photo-ring { background: linear-gradient(135deg, var(--aura-a), var(--aura-b)); box-shadow: 0 0 60px var(--aura-glow), 0 24px 50px -16px rgba(0, 0, 0, 0.6); }
 .theme-dark .profile-hero { background: #101114 !important; }
+
+/* ---------- Members directory: role sections ---------- */
+.members-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
+.members-grid.solo { grid-template-columns: minmax(260px, 340px); }
+.member-group + .member-group { margin-top: clamp(56px, 7vw, 96px); }
+.member-group-head { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 4px 24px; padding-bottom: 18px; margin-bottom: 28px; border-bottom: 1px dashed var(--line-2, rgba(255,255,255,.2)); }
+.member-group-head .mono { grid-column: 1; color: #FF5A62; text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; }
+.member-group-head h2 { grid-column: 1; font-size: clamp(1.8rem, 3.6vw, 3rem); font-weight: 800; letter-spacing: -0.04em; text-transform: uppercase; line-height: 1; margin: 0; }
+.member-group-head .member-group-count { grid-column: 2; grid-row: 1 / span 2; font-size: clamp(2rem, 4vw, 3.4rem) !important; color: rgba(255, 255, 255, 0.18) !important; letter-spacing: -0.04em !important; }

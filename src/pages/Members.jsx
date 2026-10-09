@@ -25,7 +25,6 @@ import {
   MoveDown
 } from 'lucide-react';
 import { SiteDataContext } from '../App';
-import { ScrollReveal } from '../components/ScrollReveal';
 import SafeImage from '../components/SafeImage';
 import { api } from '../services/api';
 import VisualEditable from '../components/VisualEditor/VisualEditable';
@@ -44,6 +43,26 @@ import {
 
 // Unique gradient per member: hues step by the golden angle (137.5°), an irrational fraction
 // of the circle, so no two members ever land on the same hue; neighbours are always far apart.
+// Directory sections, in display order. A member goes to the first group whose test matches their role.
+const ROLE = (m) => (m.role || '').toLowerCase();
+const OFFICE_ORDER = ['chair', 'vice chair', 'secretary', 'joint secretary', 'treasurer', 'web master', 'webmaster', 'membership chair'];
+const MEMBER_GROUPS = [
+  { key: 'chairperson', kicker: 'Leading the chapter', title: 'Faculty Chairperson', test: r => /chair\s*person/.test(r) },
+  { key: 'office', kicker: 'Office bearers', title: 'Student Executive Committee', test: r => !/faculty/.test(r) && !/^(acm\s*)?member$/.test(r.trim()) },
+  { key: 'faculty', kicker: 'Mentors', title: 'Faculty Sponsor & Coordinators', test: r => /faculty/.test(r) },
+  { key: 'members', kicker: 'The community', title: 'ACM Student Members', test: () => true },
+];
+const officeRank = (r) => { const i = OFFICE_ORDER.findIndex(o => r.trim() === o || r.startsWith(o)); return i === -1 ? OFFICE_ORDER.length : i; };
+const facultyRank = (r) => (/sponsor/.test(r) ? 0 : /coordinator/.test(r) ? 1 : 2);
+function groupMembers(list) {
+  const groups = MEMBER_GROUPS.map(g => ({ ...g, items: [] }));
+  for (const m of list) groups.find(g => g.test(ROLE(m))).items.push(m);
+  // Within a group keep the admin's display order, but rank by role first (sort is stable)
+  groups[1].items.sort((a, b) => officeRank(ROLE(a)) - officeRank(ROLE(b)));
+  groups[2].items.sort((a, b) => facultyRank(ROLE(a)) - facultyRank(ROLE(b)));
+  return groups.filter(g => g.items.length);
+}
+
 const memberAura = (index) => {
   const h = (index * 137.508 + 8) % 360;
   const h2 = (h + 38) % 360;
@@ -952,17 +971,33 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                   <span>✨ Drag & Drop any card to reposition in real-time, or use the arrow buttons!</span>
                 </div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>
-                {members.map((member, idx) => (
-                  isVisualAdmin ? (
-                    renderMemberCard(member, idx)
-                  ) : (
-                    <ScrollReveal key={member.id || idx} delay={idx * 30} duration={500} yOffset={16}>
-                      {renderMemberCard(member, idx)}
-                    </ScrollReveal>
-                  )
-                ))}
-              </div>
+              {isVisualAdmin ? (
+                // Admin keeps one flat grid so drag-and-drop ordering works across everyone
+                <div className="members-grid">
+                  {members.map((member, idx) => renderMemberCard(member, idx))}
+                </div>
+              ) : (
+                groupMembers(members).map(group => (
+                  <section key={group.key} className="member-group">
+                    <div className="member-group-head">
+                      <span className="mono">{group.kicker}</span>
+                      <h2>{group.title}</h2>
+                      <span className="member-group-count mono">{String(group.items.length).padStart(2, '0')}</span>
+                    </div>
+                    <div className={`members-grid${group.key === 'chairperson' ? ' solo' : ''}`}>
+                      {group.items.map((member, i) => {
+                        const idx = members.indexOf(member);
+                        return (
+                          <motion.div key={member.id || idx} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.6, delay: (i % 4) * 0.06, ease: [0.16, 1, 0.3, 1] }}>
+                            {renderMemberCard(member, idx)}
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))
+              )}
             </>
           )}
         </AnimatePresence>
