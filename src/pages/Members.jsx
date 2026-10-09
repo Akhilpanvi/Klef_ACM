@@ -49,7 +49,8 @@ const OFFICE_ORDER = ['chair', 'vice chair', 'secretary', 'joint secretary', 'tr
 const MEMBER_GROUPS = [
   { key: 'chairperson', kicker: 'Leading the chapter', title: 'Faculty Chairperson', test: r => /chair\s*person/.test(r) },
   { key: 'office', kicker: 'Office bearers', title: 'Student Executive Committee', test: r => !/faculty/.test(r) && !/^(acm\s*)?member$/.test(r.trim()) },
-  { key: 'faculty', kicker: 'Mentors', title: 'Faculty Sponsor & Coordinators', test: r => /faculty/.test(r) },
+  { key: 'faculty', kicker: 'Mentors', title: 'Faculty Sponsor & Coordinator', test: r => /faculty/.test(r) && !/faculty\s*member/.test(r) },
+  { key: 'professional', kicker: 'ACM professional members', title: 'Faculty Members', test: r => /faculty\s*member/.test(r) },
   { key: 'members', kicker: 'The community', title: 'ACM Student Members', test: () => true },
 ];
 const officeRank = (r) => { const i = OFFICE_ORDER.findIndex(o => r.trim() === o || r.startsWith(o)); return i === -1 ? OFFICE_ORDER.length : i; };
