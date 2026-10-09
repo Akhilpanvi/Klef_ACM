@@ -8,6 +8,8 @@ import { LAUNCH_MODE } from '../launchMode';
 
 const LOGO = '/brand/klef-acm-logo.png';
 const POLL_MS = 4000;
+// Rehearsal: /?launch-test=1 plays the whole launch on this screen only; nothing is saved.
+const TEST = typeof location !== 'undefined' && new URLSearchParams(location.search).has('launch-test');
 const CONFETTI = Array.from({ length: 90 }, (_, i) => ({
   left: Math.random() * 100,
   delay: Math.random() * 0.8,
@@ -21,7 +23,7 @@ export default function LaunchGate({ children }) {
   const { auth } = useContext(AuthContext) || {};
   const isAdmin = Boolean(auth?.authenticated);
   // 'checking' -> 'waiting' -> 'countdown' -> 'celebrate' -> 'live'
-  const [phase, setPhase] = useState(LAUNCH_MODE ? 'checking' : 'live');
+  const [phase, setPhase] = useState(TEST ? 'waiting' : LAUNCH_MODE ? 'checking' : 'live');
   const [count, setCount] = useState(3);
   const [error, setError] = useState('');
 
@@ -34,7 +36,7 @@ export default function LaunchGate({ children }) {
 
   // Poll launch state while waiting
   useEffect(() => {
-    if (phase !== 'checking' && phase !== 'waiting') return;
+    if (TEST || (phase !== 'checking' && phase !== 'waiting')) return;
     let stop = false;
     const check = async () => {
       try {
@@ -63,7 +65,10 @@ export default function LaunchGate({ children }) {
   // Celebration, then reveal
   useEffect(() => {
     if (phase !== 'celebrate') return;
-    const t = setTimeout(() => setPhase('live'), 4200);
+    const t = setTimeout(() => {
+      if (TEST) history.replaceState(null, '', location.pathname); // leave test mode once done
+      setPhase('live');
+    }, 4200);
     return () => clearTimeout(t);
   }, [phase]);
 
@@ -76,6 +81,7 @@ export default function LaunchGate({ children }) {
 
   const launch = async () => {
     setError('');
+    if (TEST) { setCount(3); setPhase('countdown'); return; } // rehearsal: no server change
     try {
       const r = await fetch('/api/launch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ launched: true }), credentials: 'same-origin' });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Launch failed');
@@ -95,19 +101,20 @@ export default function LaunchGate({ children }) {
         <source src="/media/kl-aerial.mp4" type="video/mp4" />
       </video>
       <div className="launch-shade" />
+      {TEST && <div className="launch-test-badge">TEST MODE · real site unaffected</div>}
 
       {phase === 'waiting' && (
         <div className="launch-stage">
           <div className="launch-logo"><img src={LOGO} alt="KL University × KLEF ACM Student Chapter" /></div>
           <p className="launch-kicker">Official website launch</p>
           <h1 className="launch-title">KLEF ACM<br /><span>Student Chapter</span></h1>
-          {isAdmin ? (
+          {(isAdmin || TEST) ? (
             <>
               <button type="button" className="launch-btn" onClick={launch}>
                 <span className="launch-ring" /><span className="launch-ring r2" />
                 LAUNCH
               </button>
-              <p className="launch-note">Press to launch the website for everyone</p>
+              <p className="launch-note">{TEST ? 'Test run: only this screen, nothing is saved' : 'Press to launch the website for everyone'}</p>
               {error && <p className="launch-error">{error}</p>}
             </>
           ) : (
