@@ -940,7 +940,7 @@ h4 { font-family: var(--font-sans); font-weight: 600; color: inherit; }
 
 /* ---------- Members / profile ---------- */
 .profile-hero { border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: #fff !important; }
-.profile-photo-ring { padding: 3px; border-radius: 50%; background: linear-gradient(135deg, var(--kl-red), var(--acm-blue)); }
+.profile-photo-ring { padding: 5px; border-radius: 50%; background: linear-gradient(135deg, var(--kl-red), var(--acm-blue)); }
 .profile-photo-ring > div { border-radius: 50% !important; }
 .profile-link-chip { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px; font-family: var(--font-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink); border: 1px solid var(--line-2); transition: background .2s ease, color .2s ease; }
 .profile-link-chip:hover { background: var(--kl-red); color: #fff; border-color: var(--kl-red); }

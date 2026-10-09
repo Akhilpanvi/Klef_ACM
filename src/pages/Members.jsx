@@ -771,7 +771,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="profile-photo-ring"
-            style={{ width: '180px', height: '180px', margin: '0 auto 24px', cursor: selectedMember.photograph_url ? 'zoom-in' : 'default' }}
+            style={{ width: 'clamp(220px, 26vw, 300px)', height: 'clamp(220px, 26vw, 300px)', margin: '0 auto 28px', cursor: selectedMember.photograph_url ? 'zoom-in' : 'default' }}
             title={selectedMember.photograph_url ? 'Click to expand photo' : selectedMember.name}
             onClick={() => {
               if (selectedMember.photograph_url) {
@@ -795,7 +795,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
                   </div>
                 </>
               ) : (
-                <span style={{ fontSize: '3.6rem', fontWeight: '900', color: palette.accent }}>{initials}</span>
+                <span style={{ fontSize: '5rem', fontWeight: '900', color: palette.accent }}>{initials}</span>
               )}
             </div>
           </motion.div>
