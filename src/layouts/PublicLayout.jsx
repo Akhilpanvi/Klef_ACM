@@ -48,7 +48,8 @@ export default function PublicLayout() {
     metaDescription.setAttribute('content', description);
 
     // Scroll to top on navigation
-    window.scrollTo(0, 0);
+    // 'instant' overrides the global smooth scrolling, which got interrupted when the page content swapped
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setScrollProgress(0);
   }, [location]);
 

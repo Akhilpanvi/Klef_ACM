@@ -517,6 +517,10 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
   // ---------------------------------------------------------------------------
   // MEMBER CARD RENDERER (Clean: ONLY Role & Person Name, ONLY LinkedIn on Card)
   // ---------------------------------------------------------------------------
+  // The profile renders only after the directory's exit animation (AnimatePresence mode="wait"),
+  // so jump to the top again once it is actually on screen.
+  const onProfileShown = () => window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
   const renderMemberCard = (member, index) => {
     const hasPhoto = Boolean(member.photograph_url);
     const parsed = parseMemberData(member);
@@ -711,6 +715,7 @@ export default function Members({ isVisualAdmin = false, isEditMode = false }) {
 
     return (
       <motion.div
+        onAnimationStart={onProfileShown}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 16 }}
