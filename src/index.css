@@ -614,19 +614,7 @@ button, input, textarea, select {
   animation: pageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  @keyframes pageFadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  .page-transition-wrapper {
-    animation: pageFadeIn 0.15s ease forwards;
-  }
-}
+
 
 /* Kinetic Typography reveals & Marquee tracks */
 @keyframes heroRevealLine1 {
@@ -735,26 +723,7 @@ button, input, textarea, select {
   animation: marquee 28s linear infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-eyebrow-animated,
-  .hero-word-klu,
-  .hero-word-acm,
-  .hero-subtitle-reveal,
-  .hero-desc-reveal,
-  .hero-cta-reveal,
-  .hero-scroll-indicator,
-  .scroll-indicator-arrow,
-  .hero-reveal-line-1,
-  .hero-reveal-line-2,
-  .hero-label-slide {
-    animation: none !important;
-    transform: none !important;
-    opacity: 1 !important;
-  }
-  .editorial-marquee-track {
-    animation-play-state: paused !important;
-  }
-}
+
 
 
 
@@ -950,9 +919,7 @@ h4 { font-family: var(--font-sans); font-weight: 600; color: inherit; }
   .about-grid, .values { grid-template-columns: 1fr; }
   .values > div:nth-child(even) { padding-left: 0; border-left: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .vfloor, .cube, .cassette .reel, .marquee-track, .page-hero .container * { animation: none !important; }
-}
+
 
 /* ---------- Member cards: full-bleed photo + glass caption ---------- */
 .mcard {
@@ -1001,7 +968,7 @@ h4 { font-family: var(--font-sans); font-weight: 600; color: inherit; }
 .mcard:has(.mcard-initials) .mcard-role { color: var(--kl); }
 .mcard:has(.mcard-initials) .mcard-name { color: var(--ink); text-shadow: none; }
 .mcard:has(.mcard-initials) .mcard-icon { color: var(--ink); background: #fff; border-color: var(--line); }
-@media (prefers-reduced-motion: reduce) { .mcard, .mcard:hover, .mcard:hover .mcard-glass, .mcard:hover .mcard-media img { transform: none !important; } }
+
 
 /* ---------- Loading screen (inspired by donprod.uk): KL photos behind a glass logo ---------- */
 .loader {
@@ -1039,11 +1006,7 @@ h4 { font-family: var(--font-sans); font-weight: 600; color: inherit; }
 .loader.is-done .loader-bar { opacity: 0; }
 .loader.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
 @media (max-width: 600px) { .loader-bar { grid-template-columns: 1fr 1fr; } .loader-title { display: none; } }
-@media (prefers-reduced-motion: reduce) {
-  .loader.is-done .loader-stage { transform: none; filter: none; }
-  .loader-glass::after { animation: none; display: none; }
-  .loader-shots img { transition: opacity .3s ease; transform: none; }
-}
+
 .loader-pct { font-size: clamp(2.2rem, 4vw, 3rem); font-weight: 300; letter-spacing: -0.04em; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; text-transform: none; }
 .loader-pct small { font-size: .42em; font-weight: 400; letter-spacing: 0; color: #6B707C; margin-left: 4px; vertical-align: super; }
 /* exit: zoom + blur away, then fade the sheet */
@@ -1054,9 +1017,7 @@ h4 { font-family: var(--font-sans); font-weight: 600; color: inherit; }
   .loader-bar { grid-template-columns: 1fr 1fr; }
   .loader-title { display: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .loader.is-done .loader-stage { transform: none; filter: none; }
-}
+
 @keyframes reelSpin { to { transform: rotate(360deg); } }
 .about-panel .giant { font-size: clamp(2.6rem, 6.4vw, 6.2rem); }
 .about-grid > * { min-width: 0; }
@@ -1153,7 +1114,7 @@ body:has(.theme-dark) { background: #0C0D0F; color-scheme: dark; }
 .ev-row:hover .ev-arrow { transform: translateX(5px); }
 .ev-row:hover .ev-cta { background: var(--kl-red); border-color: var(--kl-red); }
 @media (max-width: 800px) { .ev-row { grid-template-columns: 1fr; gap: 18px; } .ev-row::before { inset: 0 -12px; } }
-@media (prefers-reduced-motion: reduce) { .events-hint, .ev-badge.live i { animation: none; } .ev-row::before, .ev-shine { transition: none; } }
+
 .events-fade { position: absolute; inset: 0; background: var(--night); opacity: 0; pointer-events: none; }
 
 /* ---------- Hero: KL drone footage ---------- */
@@ -1177,7 +1138,7 @@ body:has(.theme-dark) { background: #0C0D0F; color-scheme: dark; }
 .hero-caption { position: absolute; left: 0; right: 0; bottom: 16vh; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; color: #fff; pointer-events: none; }
 .hero-caption .mono { color: rgba(255, 255, 255, 0.85); letter-spacing: .14em; text-transform: uppercase; }
 .hero-caption strong { font-size: clamp(2rem, 5vw, 4.2rem); font-weight: 800; letter-spacing: -0.045em; line-height: 1; text-shadow: 0 6px 40px rgba(0, 0, 0, 0.55); }
-@media (prefers-reduced-motion: reduce) { .vhero-pin { height: auto; } .vhero { position: relative; } }
+
 
 /* ---------- Member profile: unique grained gradient per member (colours set inline) ---------- */
 :root { --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E"); }

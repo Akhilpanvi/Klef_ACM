@@ -75,7 +75,7 @@ export function ScrollReveal({
     return 'none';
   };
 
-  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isReduced = false;
 
   const animationStyles = isReduced 
     ? {
@@ -137,7 +137,7 @@ export function TextReveal({ text, delay = 0, duration = 800, style = {} }) {
     };
   }, []);
 
-  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isReduced = false;
 
   if (isReduced) {
     return (
@@ -191,7 +191,7 @@ export function EditorialLabel({ number, label, delay = 0 }) {
     return () => { if (ref.current) observer.unobserve(ref.current); };
   }, []);
 
-  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isReduced = false;
 
   return (
     <div 
@@ -238,7 +238,7 @@ export function OversizedText({ text, speed = 0.08, direction = 'left' }) {
 
   useEffect(() => {
     let active = true;
-    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isReduced = false;
     if (isReduced) return;
 
     const handleScroll = () => {
@@ -264,7 +264,7 @@ export function OversizedText({ text, speed = 0.08, direction = 'left' }) {
     };
   }, [speed]);
 
-  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isReduced = false;
 
   const transformStyle = isReduced 
     ? {} 
@@ -305,7 +305,7 @@ export function ScrollScaleText({ children, minScale = 0.94, maxScale = 1.06 }) 
 
   useEffect(() => {
     let active = true;
-    const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isReduced = false;
     if (isReduced) return;
 
     const handleScroll = () => {
@@ -331,7 +331,7 @@ export function ScrollScaleText({ children, minScale = 0.94, maxScale = 1.06 }) 
     };
   }, [minScale, maxScale]);
 
-  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isReduced = false;
 
   const style = isReduced 
     ? {} 
@@ -368,7 +368,7 @@ export function WordHighlight({ children }) {
     return () => { if (ref.current) observer.unobserve(ref.current); };
   }, []);
 
-  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isReduced = false;
 
   return (
     <span 
@@ -440,7 +440,7 @@ export function SplitText({ line1, line2, delay = 0 }) {
     };
   }, []);
 
-  const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isReduced = false;
 
   return (
     <div ref={ref} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

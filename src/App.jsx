@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Services
@@ -111,6 +112,8 @@ export default function App() {
   return (
     <AuthContext.Provider value={{ auth, setAuth, checkAuth }}>
       <SiteDataContext.Provider value={{ siteData, setSiteData, siteDataLoading, triggerDataRefresh }}>
+        {/* Play animations even when the OS asks for reduced motion (site owner's choice) */}
+        <MotionConfig reducedMotion="never">
         <BrowserRouter>
           <Routes>
             {/* PUBLIC WEBSITE ROUTES - CAPITALIZED WITH DEEP LINKS */}
@@ -173,6 +176,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/Home" replace />} />
           </Routes>
         </BrowserRouter>
+        </MotionConfig>
       </SiteDataContext.Provider>
     </AuthContext.Provider>
   );

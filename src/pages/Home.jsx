@@ -1,6 +1,6 @@
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring, useMotionValueEvent, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring, useMotionValueEvent } from 'framer-motion';
 import { SiteDataContext } from '../App';
 import SafeImage from '../components/SafeImage';
 import VisualEditable from '../components/VisualEditor/VisualEditable';
@@ -132,7 +132,8 @@ function EventRow({ e, i }) {
 
 export default function Home() {
   const { siteData } = useContext(SiteDataContext);
-  const reduce = useReducedMotion();
+  // Animations always play, even with macOS/iOS 'Reduce motion' on (site owner's choice)
+  const reduce = false;
   const homeData = siteData?.pages?.home?.content || {};
   const chapterData = siteData?.pages?.['about-klef-acm']?.content || {};
   const acmData = siteData?.pages?.['about-acm']?.content || {};
