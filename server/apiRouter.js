@@ -72,108 +72,6 @@ export const supabase = (supabaseUrl && supabaseServiceKey)
   ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
   : null;
 
-/**
- * 8-Character Cryptographic CAPTCHA Generator conforming to strict requirements:
- * 1. Exactly 8 characters length
- * 2. Uppercase (A-Z), Lowercase (a-z), Digits (0-9)
- * 3. Exclude ambiguous characters: 0, O, 1, I, l, 5, S, 2, Z
- * 4. No duplicate characters (each appears at most once)
- * 5. No repeated digits or letters (case-insensitive distinct letters)
- * 6. No sequential patterns (e.g. ABC, 346, 789)
- * 7. Case-sensitive answer validation
- */
-const cleanDigits = ['3', '4', '6', '7', '8', '9'];
-const cleanUpper = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'T', 'U', 'V', 'W', 'X', 'Y'];
-const cleanLower = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 't', 'u', 'v', 'w', 'x', 'y'];
-
-function generateStrictCaptcha8() {
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const usedLetters = new Set();
-    const usedDigits = new Set();
-    const chosen = [];
-
-    const pool = [
-      ...cleanUpper.map(c => ({ char: c, type: 'letter', base: c.toLowerCase() })),
-      ...cleanLower.map(c => ({ char: c, type: 'letter', base: c.toLowerCase() })),
-      ...cleanDigits.map(d => ({ char: d, type: 'digit', base: d }))
-    ];
-
-    while (chosen.length < 8) {
-      const idx = crypto.randomInt(0, pool.length);
-      const candidate = pool[idx];
-      if (candidate.type === 'digit') {
-        if (usedDigits.has(candidate.base)) continue;
-        usedDigits.add(candidate.base);
-        chosen.push(candidate.char);
-      } else {
-        if (usedLetters.has(candidate.base)) continue;
-        usedLetters.add(candidate.base);
-        chosen.push(candidate.char);
-      }
-    }
-
-    const code = chosen.join('');
-    // Guard against consecutive ASCII sequences of length 3+
-    let hasSequence = false;
-    for (let i = 0; i < code.length - 2; i++) {
-      const c1 = code.charCodeAt(i);
-      const c2 = code.charCodeAt(i + 1);
-      const c3 = code.charCodeAt(i + 2);
-      if (c2 === c1 + 1 && c3 === c2 + 1) {
-        hasSequence = true;
-        break;
-      }
-    }
-
-    if (!hasSequence) {
-      return code;
-    }
-  }
-
-  // Fallback safe random 8-char
-  return 'A7kP3mX9';
-}
-
-function renderCaptchaSvg(code) {
-  const width = 240;
-  const height = 75;
-  let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background:#f8fafc; border-radius:6px; border:1px solid #cbd5e1; user-select:none;">`;
-
-  // Draw background noise lines
-  for (let i = 0; i < 5; i++) {
-    const x1 = crypto.randomInt(0, width);
-    const y1 = crypto.randomInt(0, height);
-    const x2 = crypto.randomInt(0, width);
-    const y2 = crypto.randomInt(0, height);
-    const color = `hsl(${200 + crypto.randomInt(0, 30)}, 40%, 80%)`;
-    svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${1 + crypto.randomInt(1, 2)}" />`;
-  }
-
-  // Draw 8 characters with distinct rotation and placement
-  for (let i = 0; i < code.length; i++) {
-    const char = code[i];
-    const fontSize = 26 + crypto.randomInt(0, 6);
-    const angle = crypto.randomInt(-15, 15);
-    const x = 16 + i * 27 + crypto.randomInt(-3, 3);
-    const y = 48 + crypto.randomInt(-4, 4);
-    const color = `hsl(${207 + crypto.randomInt(0, 15)}, 85%, ${20 + crypto.randomInt(0, 20)}%)`;
-    svg += `<text x="${x}" y="${y}" font-size="${fontSize}" font-family="monospace, Courier New" font-weight="bold" fill="${color}" transform="rotate(${angle}, ${x}, ${y})">${char}</text>`;
-  }
-
-  // Add random dots
-  for (let i = 0; i < 25; i++) {
-    const cx = crypto.randomInt(0, width);
-    const cy = crypto.randomInt(0, height);
-    const r = (crypto.randomInt(10, 20) / 10);
-    const color = `hsl(${200 + crypto.randomInt(0, 30)}, 50%, 75%)`;
-    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" />`;
-  }
-
-  svg += '</svg>';
-  return svg;
-}
-
-// Session Validator helper
 export function verifyAdminSession(req) {
   const cookieHeader = req.headers.cookie || req.headers.Cookie || '';
   if (!cookieHeader) return null;
@@ -201,6 +99,25 @@ let publicDataInFlight = null;
 export function invalidatePublicCache() {
   publicDataCache.timestamp = 0;
 }
+
+// ponytail: in-memory login limiter — per server instance (resets on cold start); move to the
+// DB if serverless instances ever need to share it.
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_LOCK_MS = 10 * 60 * 1000;
+const loginFails = new Map(); // key -> { count, until }
+function loginLockRemaining(keys) {
+  const now = Date.now();
+  return Math.max(0, ...keys.map(k => { const e = loginFails.get(k); return e && e.until > now ? e.until - now : 0; }));
+}
+function recordLoginFailure(keys) {
+  const now = Date.now();
+  for (const k of keys) {
+    const e = loginFails.get(k);
+    const count = (e && (e.until === 0 || e.until > now) ? e.count : 0) + 1;
+    loginFails.set(k, { count, until: count >= LOGIN_MAX_FAILS ? now + LOGIN_LOCK_MS : 0 });
+  }
+}
+function clearLoginFailures(keys) { for (const k of keys) loginFails.delete(k); }
 
 export function createApiRouter() {
   const router = express.Router();
@@ -366,122 +283,24 @@ export function createApiRouter() {
   });
 
   // ---------------------------------------------------------------------------
-  // 2. CAPTCHA GENERATION (Strict 8-Char, Cryptographic, Single-Use, 5-Min Expiry)
-  // ---------------------------------------------------------------------------
-  router.get('/captcha', async (req, res) => {
-    try {
-      const code = generateStrictCaptcha8();
-      const svg = renderCaptchaSvg(code);
-
-      const answerHash = crypto.createHash('sha256').update(code).digest('hex');
-      const nonce = crypto.randomUUID();
-      const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes lifetime
-
-      const payload = `${nonce}:${expiresAt}:${answerHash}`;
-      const hmacSig = crypto.createHmac('sha256', sessionSecret).update(payload).digest('hex');
-      const token = `${nonce}.${expiresAt}.${hmacSig}`;
-
-      // Persist challenge into database if Supabase connected
-      if (supabase) {
-        try {
-          await supabase.from('captcha_challenges').insert({
-            token,
-            hash: answerHash,
-            attempts: 0,
-            expires_at: new Date(expiresAt).toISOString(),
-          });
-          // Prune old challenges
-          supabase.from('captcha_challenges').delete().lt('expires_at', new Date().toISOString()).then(() => {}).catch(() => {});
-        } catch (e) {
-          console.warn('CAPTCHA DB storage notice:', e.message);
-        }
-      }
-
-      return res.json({ token, svg });
-    } catch (err) {
-      console.error('CAPTCHA generation error:', err);
-      return res.status(500).json({ error: 'Failed to generate CAPTCHA challenge.' });
-    }
-  });
-
-  // ---------------------------------------------------------------------------
   // 3. SECURE ADMIN LOGIN (Server-Side Authentication & Session Cookie)
   // ---------------------------------------------------------------------------
   router.post('/login', async (req, res) => {
     try {
-      const { username, password, captchaToken, captchaAnswer } = req.body || {};
+      const { username, password } = req.body || {};
 
-      if (!username || !password || !captchaToken || !captchaAnswer) {
-        return res.status(400).json({ error: 'All fields are required.' });
+      if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required.' });
       }
 
       const cleanUsername = String(username).trim();
       const cleanPassword = String(password).trim();
-      const cleanAnswer = String(captchaAnswer).trim();
 
-      // 1. Validate CAPTCHA (Single Use, Max Attempts, Case Sensitive)
-      let captchaValid = false;
-      const answerHash = crypto.createHash('sha256').update(cleanAnswer).digest('hex');
-
-      // Check DB challenge if available
-      if (supabase) {
-        try {
-          const { data: cRow } = await supabase
-            .from('captcha_challenges')
-            .select('*')
-            .eq('token', captchaToken)
-            .maybeSingle();
-
-          if (cRow) {
-            if (new Date(cRow.expires_at) < new Date()) {
-              await supabase.from('captcha_challenges').delete().eq('token', captchaToken);
-              return res.status(400).json({ error: 'CAPTCHA challenge has expired. Please refresh.' });
-            }
-            if (cRow.hash === answerHash) {
-              captchaValid = true;
-              // Single-use invalidation
-              await supabase.from('captcha_challenges').delete().eq('token', captchaToken);
-            } else {
-              const newAttempts = (cRow.attempts || 0) + 1;
-              if (newAttempts >= 3) {
-                await supabase.from('captcha_challenges').delete().eq('token', captchaToken);
-                return res.status(401).json({ error: 'Maximum CAPTCHA attempts exceeded. Please refresh.' });
-              } else {
-                await supabase.from('captcha_challenges').update({ attempts: newAttempts }).eq('token', captchaToken);
-                return res.status(401).json({ error: `Incorrect CAPTCHA answer. Attempt ${newAttempts} of 3.` });
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('DB CAPTCHA validation fallback:', e.message);
-        }
-      }
-
-      // HMAC cryptographic fallback verification
-      if (!captchaValid && captchaToken) {
-        const parts = captchaToken.split('.');
-        if (parts.length === 3) {
-          const [nonce, expStr, sig] = parts;
-          const exp = parseInt(expStr, 10);
-          if (exp && exp > Date.now()) {
-            const expectedPayload = `${nonce}:${exp}:${answerHash}`;
-            const expectedSig = crypto.createHmac('sha256', sessionSecret).update(expectedPayload).digest('hex');
-            if (sig.length === expectedSig.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
-              captchaValid = true;
-            }
-          }
-        }
-      }
-
-      // Local client fallback verification
-      if (!captchaValid && typeof captchaToken === 'string' && captchaToken.startsWith('local-')) {
-        if (captchaToken.toLowerCase() === `local-${cleanAnswer.toLowerCase()}`) {
-          captchaValid = true;
-        }
-      }
-
-      if (!captchaValid) {
-        return res.status(401).json({ error: 'Invalid or expired CAPTCHA code. Please enter the exact code displayed.' });
+      // Brute-force guard (replaces the old CAPTCHA)
+      const limitKeys = [`ip:${req.ip}`, `user:${cleanUsername.toLowerCase()}`];
+      const lockedFor = loginLockRemaining(limitKeys);
+      if (lockedFor) {
+        return res.status(429).json({ error: `Too many failed attempts. Try again in ${Math.ceil(lockedFor / 60000)} minute(s).` });
       }
 
       // 2. Query admin user from live database
@@ -512,14 +331,16 @@ export function createApiRouter() {
 
       if (!user) {
         bcrypt.compareSync('dummy', '$2a$12$DummySaltForTimingAttackPreventionOnlyDoNotUse');
-        return res.status(401).json({ error: 'Invalid username, password, or CAPTCHA answer.' });
+        recordLoginFailure(limitKeys);
+        return res.status(401).json({ error: 'Invalid username or password.' });
       }
 
       // 3. Verify Password Hash
       if (user.password_hash) {
         const match = bcrypt.compareSync(cleanPassword, user.password_hash);
         if (!match) {
-          return res.status(401).json({ error: 'Invalid username, password, or CAPTCHA answer.' });
+          recordLoginFailure(limitKeys);
+        return res.status(401).json({ error: 'Invalid username or password.' });
         }
       }
 
@@ -532,6 +353,7 @@ export function createApiRouter() {
 
       const sessionToken = jwt.sign(sessionPayload, sessionSecret, { expiresIn: '24h' });
 
+      clearLoginFailures(limitKeys);
       res.setHeader('Set-Cookie', serializeCookie('acm_session', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

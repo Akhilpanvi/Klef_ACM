@@ -22,7 +22,7 @@ async function handleResponse(response) {
   }
 
   if (!response.ok) {
-    const errorMsg = data?.error || (response.status === 401 ? 'Invalid credentials or CAPTCHA answer.' : 'API Request Failed');
+    const errorMsg = data?.error || (response.status === 401 ? 'Invalid username or password.' : 'API Request Failed');
     const err = new Error(errorMsg);
     err.status = response.status;
     err.data = data;
@@ -119,25 +119,15 @@ export const api = {
   // ---------------------------------------------------------------------------
 
   /**
-   * Fetches a new 8-character cryptographic CAPTCHA challenge
+   * Submits credentials for server authentication
    */
-  async getCaptcha() {
-    const res = await fetch(`${API_BASE}/captcha`);
-    return handleResponse(res);
-  },
-
-  /**
-   * Submits credentials & CAPTCHA for server authentication
-   */
-  async login(username, password, captchaToken, captchaAnswer) {
+  async login(username, password) {
     const res = await fetch(`${API_BASE}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username,
         password,
-        captchaToken,
-        captchaAnswer,
       }),
       credentials: 'same-origin',
     });
