@@ -658,11 +658,17 @@ export function createApiRouter() {
       }
 
       if (uploadErr) {
-        // No base64-in-database fallback: it bloated public data to 12MB+ and caused query timeouts.
-        console.error('Storage upload failed:', uploadErr.message || uploadErr);
+        // Storage not set up (no acm-media bucket / no secret key): store the image inline instead.
+        // Safe now because uploads arrive pre-shrunk (~150KB WebP, see api.uploadImage) and public
+        // pages read inline images through /api/media, not inside the page data.
+        // ponytail: inline cap 1.5MB; Supabase Storage is still the better home (CDN, no DB weight).
+        const INLINE_MAX = 1.5 * 1024 * 1024;
+        if (buffer.length <= INLINE_MAX) {
+          console.warn('Storage unavailable, storing image inline:', uploadErr.message || uploadErr);
+          return res.json({ url: `data:${type || 'image/jpeg'};base64,${rawBase64}`, path: 'inline' });
+        }
         return res.status(503).json({
-          error: 'Image storage is not set up. In Supabase, create a public Storage bucket named "acm-media", '
-            + 'and make sure SUPABASE_SERVICE_ROLE_KEY in .env is the secret (service_role) key.',
+          error: 'Image is too large to store without Supabase Storage. Use a smaller image, or set up the public "acm-media" bucket and the secret SUPABASE_SERVICE_ROLE_KEY.',
         });
       }
 
