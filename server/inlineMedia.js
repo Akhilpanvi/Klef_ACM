@@ -100,3 +100,30 @@ export async function fetchMembersLight(supabase) {
   }));
   return { data, error: null };
 }
+
+// The public API hands out /api/media/... links in place of inline images. When the admin
+// editor saves a row it sends those links back; writing them would overwrite the real image
+// with a link to itself. Restore the stored value for any such field before writing.
+const isMediaRef = (v) => typeof v === 'string' && v.startsWith('/api/media/');
+
+export async function restoreMediaRefs(supabase, table, payload) {
+  if (!supabase || !payload || typeof payload !== 'object' || Array.isArray(payload)) return payload;
+  const out = { ...payload };
+  for (const [field, value] of Object.entries(payload)) {
+    if (isMediaRef(value)) delete out[field]; // update leaves the column unchanged
+  }
+  const content = payload.content;
+  if (table === 'pages' && content && typeof content === 'object' && Object.values(content).some(isMediaRef)) {
+    const key = payload.slug ? ['slug', payload.slug] : ['id', payload.id];
+    const { data } = await supabase.from('pages').select('content').eq(key[0], key[1]).maybeSingle();
+    const stored = data?.content || {};
+    out.content = { ...content };
+    for (const [field, value] of Object.entries(content)) {
+      if (isMediaRef(value)) {
+        if (stored[field] !== undefined) out.content[field] = stored[field];
+        else delete out.content[field];
+      }
+    }
+  }
+  return out;
+}

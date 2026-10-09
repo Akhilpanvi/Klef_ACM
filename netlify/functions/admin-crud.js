@@ -1,4 +1,5 @@
 import { supabase } from './utils/db.js';
+import { restoreMediaRefs } from '../../server/inlineMedia.js';
 import { getAdminSession } from './utils/auth.js';
 
 const ALLOWED_TABLES = [
@@ -87,7 +88,7 @@ export async function handler(event, context) {
         return { statusCode: 403, headers, body: JSON.stringify({ error: 'Audit logs are read-only.' }) };
       }
 
-      const payload = JSON.parse(event.body || '{}');
+      const payload = await restoreMediaRefs(supabase, table, JSON.parse(event.body || '{}'));
       
       // Remove ID to let DB generate UUID if it's there and empty
       if (payload.id === '') {
@@ -128,7 +129,7 @@ export async function handler(event, context) {
         return { statusCode: 403, headers, body: JSON.stringify({ error: 'Audit logs are read-only.' }) };
       }
 
-      const payload = JSON.parse(event.body || '{}');
+      const payload = await restoreMediaRefs(supabase, table, JSON.parse(event.body || '{}'));
       
       let resError;
       let data;

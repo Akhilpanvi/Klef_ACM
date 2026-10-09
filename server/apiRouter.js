@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-import { offloadPayload, offloadRows, loadInlineMedia, fetchMembersLight, MEDIA_CACHE_HEADER } from './inlineMedia.js';
+import { offloadPayload, offloadRows, loadInlineMedia, fetchMembersLight, restoreMediaRefs, MEDIA_CACHE_HEADER } from './inlineMedia.js';
 
 dotenv.config();
 
@@ -661,9 +661,13 @@ export function createApiRouter() {
 
   router.post('/admin-crud', async (req, res) => {
     const table = req.query.table;
-    const body = req.body;
+    let body = req.body;
     if (!table || !ALLOWED_TABLES.includes(table)) return res.status(400).json({ error: 'Invalid table' });
     if (!supabase) return res.status(503).json({ error: 'Database unconfigured' });
+    // Never let a /api/media/... link overwrite the stored image (see restoreMediaRefs)
+    body = Array.isArray(body)
+      ? await Promise.all(body.map(item => restoreMediaRefs(supabase, table, item)))
+      : await restoreMediaRefs(supabase, table, body);
 
     try {
       const { data, error } = await safeSupabaseExecute((payload) => {
@@ -692,9 +696,13 @@ export function createApiRouter() {
 
   router.put('/admin-crud', async (req, res) => {
     const table = req.query.table;
-    const body = req.body;
+    let body = req.body;
     if (!table || !ALLOWED_TABLES.includes(table)) return res.status(400).json({ error: 'Invalid table' });
     if (!supabase) return res.status(503).json({ error: 'Database unconfigured' });
+    // Never let a /api/media/... link overwrite the stored image (see restoreMediaRefs)
+    body = Array.isArray(body)
+      ? await Promise.all(body.map(item => restoreMediaRefs(supabase, table, item)))
+      : await restoreMediaRefs(supabase, table, body);
 
     try {
       if (Array.isArray(body)) {
