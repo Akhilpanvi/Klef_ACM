@@ -235,27 +235,37 @@ export const api = {
 };
 
 const MAX_UPLOAD_DIM = 1600; // px, longest side — plenty for banners and portraits
+const TARGET_BYTES = 600 * 1024; // keep well under the server's 1.5MB inline limit
 
 // Downscale + re-encode in the browser so a 5MB phone photo uploads as ~200KB.
-// Keeps the original when it can't help (SVG/GIF) or when the result isn't smaller.
+// WebP where the browser can encode it (keeps PNG transparency), otherwise JPEG (Safari),
+// stepping quality down until the result fits. SVG/GIF pass through untouched.
 async function shrinkImage(name, type, base64Body) {
   const raw = String(base64Body).replace(/^data:[^,]*,/, '');
-  if (!/^image\/(jpe?g|png|webp)$/i.test(type || '')) return { name, type, body: raw };
+  if (!/^image\//i.test(type || '') || /svg|gif/i.test(type)) return { name, type, body: raw };
   try {
     const bitmap = await createImageBitmap(await (await fetch(`data:${type};base64,${raw}`)).blob());
-    const scale = Math.min(1, MAX_UPLOAD_DIM / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    // WebP keeps PNG transparency and beats JPEG on size
-    const out = canvas.toDataURL('image/webp', 0.85);
-    if (!out.startsWith('data:image/webp')) return { name, type, body: raw }; // browser can't encode WebP
-    const body = out.split(',')[1];
-    if (body.length >= raw.length) return { name, type, body: raw };
-    return { name: name.replace(/\.[^.]+$/, '') + '.webp', type: 'image/webp', body };
+    const webp = document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp');
+    const outType = webp ? 'image/webp' : 'image/jpeg';
+    let body = raw;
+    let dim = Math.min(1, MAX_UPLOAD_DIM / Math.max(bitmap.width, bitmap.height));
+    // Shrink quality first, then dimensions, until it fits
+    for (let pass = 0; pass < 4; pass++, dim *= 0.7) {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * dim));
+      canvas.height = Math.max(1, Math.round(bitmap.height * dim));
+      const ctx = canvas.getContext('2d');
+      if (!webp) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); } // JPEG has no alpha
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      for (const q of [0.85, 0.7, 0.55]) {
+        body = canvas.toDataURL(outType, q).split(',')[1];
+        if (body.length * 0.75 <= TARGET_BYTES) break;
+      }
+      if (body.length * 0.75 <= TARGET_BYTES) break;
+    }
+    if (body.length >= raw.length && /^image\/(jpe?g|png|webp)$/i.test(type)) return { name, type, body: raw };
+    return { name: name.replace(/\.[^.]+$/, '') + (webp ? '.webp' : '.jpg'), type: outType, body };
   } catch {
     return { name, type, body: raw };
   }
 }
-
