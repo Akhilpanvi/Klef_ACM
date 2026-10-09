@@ -1198,4 +1198,8 @@ body:has(.theme-dark) { background: #0C0D0F; color-scheme: dark; }
 @keyframes launchCount { 0% { opacity: 0; transform: scale(1.8); } 25% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(.85); } }
 @keyframes launchConfetti { to { transform: translate3d(0, 110vh, 0) rotate(var(--spin)); } }
 @keyframes launchOut { to { opacity: 0; } }
-.launch-test-badge { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2; padding: 6px 14px; border-radius: 999px; background: #F5C542; color: #111; font-family: var(--font-mono); font-size: .72rem; font-weight: 600; letter-spacing: .12em; }
+.launch-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 6px; font-size: .82rem; font-weight: 700; cursor: pointer; color: #94a3b8; background: transparent; border: 1px solid #334155; }
+.launch-toggle i { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
+.launch-toggle.on { color: #fff; background: #D32A38; border-color: #D32A38; }
+.launch-toggle.on i { background: #fff; animation: livePulse 1.6s ease-out infinite; }
+.launch-toggle:disabled { opacity: .6; cursor: wait; }

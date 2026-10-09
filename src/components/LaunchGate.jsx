@@ -8,8 +8,6 @@ import { LAUNCH_MODE } from '../launchMode';
 
 const LOGO = '/brand/klef-acm-logo.png';
 const POLL_MS = 4000;
-// Rehearsal: /?launch-test=1 plays the whole launch on this screen only; nothing is saved.
-const TEST = typeof location !== 'undefined' && new URLSearchParams(location.search).has('launch-test');
 const CONFETTI = Array.from({ length: 90 }, (_, i) => ({
   left: Math.random() * 100,
   delay: Math.random() * 0.8,
@@ -23,20 +21,13 @@ export default function LaunchGate({ children }) {
   const { auth } = useContext(AuthContext) || {};
   const isAdmin = Boolean(auth?.authenticated);
   // 'checking' -> 'waiting' -> 'countdown' -> 'celebrate' -> 'live'
-  const [phase, setPhase] = useState(TEST ? 'waiting' : LAUNCH_MODE ? 'checking' : 'live');
+  const [phase, setPhase] = useState(LAUNCH_MODE ? 'checking' : 'live');
   const [count, setCount] = useState(3);
   const [error, setError] = useState('');
 
-  // Rehearsal helper for admins: open /?relaunch=1 to put the site back into launch mode
-  useEffect(() => {
-    if (!LAUNCH_MODE || !isAdmin || !new URLSearchParams(location.search).has('relaunch')) return;
-    fetch('/api/launch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ launched: false }), credentials: 'same-origin' })
-      .then(() => { history.replaceState(null, '', location.pathname); setPhase('waiting'); });
-  }, [isAdmin]);
-
   // Poll launch state while waiting
   useEffect(() => {
-    if (TEST || (phase !== 'checking' && phase !== 'waiting')) return;
+    if (phase !== 'checking' && phase !== 'waiting') return;
     let stop = false;
     const check = async () => {
       try {
@@ -65,10 +56,7 @@ export default function LaunchGate({ children }) {
   // Celebration, then reveal
   useEffect(() => {
     if (phase !== 'celebrate') return;
-    const t = setTimeout(() => {
-      if (TEST) history.replaceState(null, '', location.pathname); // leave test mode once done
-      setPhase('live');
-    }, 4200);
+    const t = setTimeout(() => setPhase('live'), 4200);
     return () => clearTimeout(t);
   }, [phase]);
 
@@ -81,7 +69,6 @@ export default function LaunchGate({ children }) {
 
   const launch = async () => {
     setError('');
-    if (TEST) { setCount(3); setPhase('countdown'); return; } // rehearsal: no server change
     try {
       const r = await fetch('/api/launch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ launched: true }), credentials: 'same-origin' });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Launch failed');
@@ -101,20 +88,19 @@ export default function LaunchGate({ children }) {
         <source src="/media/kl-aerial.mp4" type="video/mp4" />
       </video>
       <div className="launch-shade" />
-      {TEST && <div className="launch-test-badge">TEST MODE · real site unaffected</div>}
 
       {phase === 'waiting' && (
         <div className="launch-stage">
           <div className="launch-logo"><img src={LOGO} alt="KL University × KLEF ACM Student Chapter" /></div>
           <p className="launch-kicker">Official website launch</p>
           <h1 className="launch-title">KLEF ACM<br /><span>Student Chapter</span></h1>
-          {(isAdmin || TEST) ? (
+          {isAdmin ? (
             <>
               <button type="button" className="launch-btn" onClick={launch}>
                 <span className="launch-ring" /><span className="launch-ring r2" />
                 LAUNCH
               </button>
-              <p className="launch-note">{TEST ? 'Test run: only this screen, nothing is saved' : 'Press to launch the website for everyone'}</p>
+              <p className="launch-note">Press to launch the website for everyone</p>
               {error && <p className="launch-error">{error}</p>}
             </>
           ) : (
@@ -142,5 +128,43 @@ export default function LaunchGate({ children }) {
         </div>
       )}
     </div>
+  );
+}
+
+// Admin header switch: ON = visitors see the launch screen; OFF = site is open.
+// Turning it ON again after a launch re-arms the LAUNCH button (use this to rehearse).
+export function LaunchModeToggle() {
+  const [on, setOn] = useState(null); // null = loading
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/launch', { cache: 'no-store' }).then(r => r.json()).then(j => setOn(!j.launched)).catch(() => setOn(null));
+  }, []);
+
+  const toggle = async () => {
+    const next = !on;
+    const msg = next
+      ? 'Turn launch mode ON?\n\nThe public website will be hidden behind the launch screen until an admin presses LAUNCH.'
+      : 'Turn launch mode OFF?\n\nThe website opens for everyone right away (no countdown).';
+    if (!window.confirm(msg)) return;
+    setBusy(true);
+    try {
+      const r = await fetch('/api/launch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ launched: !next }), credentials: 'same-origin' });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'Failed');
+      setOn(!j.launched);
+    } catch (e) {
+      window.alert(`Could not change launch mode: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!LAUNCH_MODE || on === null) return null;
+  return (
+    <button type="button" onClick={toggle} disabled={busy} className={`launch-toggle${on ? ' on' : ''}`}
+      title={on ? 'Website is hidden behind the launch screen. Click to open it.' : 'Website is open. Click to show the launch screen again.'}>
+      <i />{busy ? 'Saving…' : on ? 'Launch mode: ON' : 'Launch mode: OFF'}
+    </button>
   );
 }
