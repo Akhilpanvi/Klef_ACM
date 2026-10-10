@@ -34,3 +34,6 @@ dist-ssr
 # web-ready cuts live in public/media
 raw-assets/
 .env.vercel
+
+# Launch/social videos (large renders)
+brag-output/
