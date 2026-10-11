@@ -31,12 +31,11 @@ CREATE TRIGGER update_admin_users_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Seed Administrator (Username: Bhaanugali@gmail.com, Password: Sai@9866)
-INSERT INTO admin_users (username, password_hash, role, active)
-VALUES 
-    ('Bhaanugali@gmail.com', '$2b$12$fnDMmkpN82p.50yJaUcLGe7eXO4Yc2P7JkWbaXX9C.3jLYr7fq39.', 'superadmin', true),
-    ('admin', '$2b$12$v76CtIMcHCTDE7ij/FRMy.KheI6dLaB98AdEmZUWnDGv0LV13VFJK', 'admin', true)
-ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash;
+-- Administrators are NOT seeded here (no default passwords in source control).
+-- Create one with a bcrypt hash generated locally, e.g.:
+--   node -e "console.log(require('bcryptjs').hashSync(process.argv[1], 12))" 'your-strong-password'
+--   INSERT INTO admin_users (username, password_hash, role, active)
+--   VALUES ('you@example.com', '<paste hash>', 'superadmin', true);
 
 --------------------------------------------------------------------------------
 -- 2. site_settings
