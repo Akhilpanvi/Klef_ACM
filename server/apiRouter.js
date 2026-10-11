@@ -318,17 +318,6 @@ export function createApiRouter() {
         }
       }
 
-      // Fallback for environment root admin if table is brand new
-      if (!user) {
-        const rootAdmin = process.env.ADMIN_EMAIL || 'Bhaanugali@gmail.com';
-        if (cleanUsername.toLowerCase() === rootAdmin.toLowerCase() || cleanUsername.toLowerCase() === 'admin') {
-          const rootHash = '$2b$12$fnDMmkpN82p.50yJaUcLGe7eXO4Yc2P7JkWbaXX9C.3jLYr7fq39.'; // Sai@9866
-          if (bcrypt.compareSync(cleanPassword, rootHash)) {
-            user = { id: '00000000-0000-0000-0000-000000000001', username: cleanUsername, role: 'superadmin' };
-          }
-        }
-      }
-
       if (!user) {
         bcrypt.compareSync('dummy', '$2a$12$DummySaltForTimingAttackPreventionOnlyDoNotUse');
         recordLoginFailure(limitKeys);
@@ -724,8 +713,9 @@ export function createApiRouter() {
       }
 
       const smtpUser = process.env.SMTP_USER || process.env.ADMIN_EMAIL || 'Bhaanugali@gmail.com';
-      const rawSmtpPass = process.env.SMTP_PASS || 'yhqx nxzt dvgv pcjz';
+      const rawSmtpPass = process.env.SMTP_PASS || '';
       const smtpPass = rawSmtpPass.replace(/\s+/g, '');
+      if (!smtpPass) return res.status(503).json({ error: 'Email is not configured on the server (SMTP_PASS missing).' });
       const adminRecipient = process.env.ADMIN_EMAIL || 'Bhaanugali@gmail.com';
 
       // Robust transporter factory: Port 587 STARTTLS as default (bypasses ISP/firewall blocks on 465)

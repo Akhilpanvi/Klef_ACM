@@ -173,7 +173,7 @@ export async function handler(event, context) {
     if (!user) {
       const allowedAdminEmails = ['bhaanugali@gmail.com', 'admin'];
       if (allowedAdminEmails.includes(cleanUsername.toLowerCase())) {
-        const fallbackHash = '$2b$12$fnDMmkpN82p.50yJaUcLGe7eXO4Yc2P7JkWbaXX9C.3jLYr7fq39.'; // Sai@9866
+        const fallbackHash = '$2b$12$fnDMmkpN82p.50yJaUcLGe7eXO4Yc2P7JkWbaXX9C.3jLYr7fq39.';
         const isMatch = bcrypt.compareSync(password, fallbackHash);
         if (isMatch) {
           user = {

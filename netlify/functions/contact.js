@@ -36,8 +36,9 @@ export async function handler(event, context) {
     // SMTP Credentials from environment or configured defaults
     // Note: App password formatted without spaces
     const smtpUser = process.env.SMTP_USER || process.env.ADMIN_EMAIL || 'Bhaanugali@gmail.com';
-    const rawSmtpPass = process.env.SMTP_PASS || 'yhqx nxzt dvgv pcjz';
+    const rawSmtpPass = process.env.SMTP_PASS || '';
     const smtpPass = rawSmtpPass.replace(/\s+/g, '');
+    if (!smtpPass) return { statusCode: 503, headers, body: JSON.stringify({ error: 'Email is not configured on the server (SMTP_PASS missing).' }) };
     const adminRecipient = process.env.ADMIN_EMAIL || process.env.SMTP_USER || 'Bhaanugali@gmail.com';
 
     // Create Transporter
